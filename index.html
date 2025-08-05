@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת בקשות משמרות אישית</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Arial Hebrew', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .login-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .employee-selector {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .employee-selector h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 1.3rem;
+        }
+        
+        .employee-dropdown {
+            width: 100%;
+            max-width: 300px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            background: white;
+            margin-bottom: 20px;
+        }
+        
+        .employee-dropdown:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+        
+        .manager-login {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .manager-login input {
+            padding: 10px 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            margin: 0 10px;
+        }
+        
+        .manager-login input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #00b894, #00a085);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,184,148,0.3);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 10px 20px rgba(79,172,254,0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #00b894, #00a085);
+        }
+        
+        .employee-form {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .employee-form.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .form-title::before {
+            content: "👤";
+            font-size: 1.2rem;
+        }
+        
+        .deadline-info {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .shifts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .shift-option {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            user-select: none;
+        }
+        
+        .shift-option:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+        }
+        
+        .shift-option.selected {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border-color: #ff6b6b;
+            transform: scale(1.02);
+        }
+        
+        .shift-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f8f9fa;
+        }
+        
+        .shift-option.disabled:hover {
+            transform: none;
+            border-color: #e9ecef;
+        }
+        
+        .shift-date {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            color: #6c757d;
+        }
+        
+        .shift-option.selected .shift-date {
+            color: white;
+        }
+        
+        .shift-time {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .unavailable-badge {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .counter {
+            text-align: center;
+            font-size: 1rem;
+            color: #6c757d;
+            margin: 20px 0;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+        
+        .counter.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .counter.limit-reached {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .alert-info {
+            background: #cce7ff;
+            color: #004085;
+            border: 1px solid #99d6ff;
+        }
+        
+        .form-actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .manager-panel {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 25px;
+        }
+        
+        .manager-panel.active {
+            display: block;
+        }
+        
+        .requests-list {
+            margin-top: 20px;
+        }
+        
+        .request-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-right: 4px solid #4facfe;
+        }
+        
+        .request-employee {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .request-shifts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .request-shift {
+            background: #ffebee;
+            color: #c62828;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>בקשות משמרות</h1>
+            <p>בחרו עד 3 משמרות שאתם לא יכולים לעבוד</p>
+        </div>
+        
+        <div class="content">
+            <!-- Employee Selection -->
+            <div class="employee-selector">
+                <h3>בחרו את השם שלכם:</h3>
+                <select class="employee-dropdown" id="employeeSelect" onchange="showEmployeeForm()">
+                    <option value="">-- בחרו עובד --</option>
+                </select>
+            </div>
+            
+            <!-- Manager Login -->
+            <div class="manager-login">
+                <strong>כניסת מנהלים:</strong>
+                <input type="password" id="managerPassword" placeholder="סיסמת מנהל">
+                <button class="btn btn-primary" onclick="checkManagerAccess()">כניסה</button>
+            </div>
+            
+            <!-- Deadline Info -->
+            <div class="deadline-info" id="deadlineInfo"></div>
+            
+            <!-- Employee Form -->
+            <div class="employee-form" id="employeeForm">
+                <div class="form-title" id="formTitle">בחירת משמרות</div>
+                
+                <div class="alert alert-info">
+                    <strong>הוראות:</strong> בחרו עד 3 משמרות שאתם <strong>לא יכולים</strong> לעבוד בשבוע הרלוונטי
+                </div>
+                
+                <div class="shifts-grid" id="shiftsGrid"></div>
+                
+                <div class="counter" id="shiftsCounter">
+                    משמרות לא זמינות: 0/3
+                </div>
+                
+                <div class="form-actions">
+                    <button class="btn btn-success" onclick="submitRequest()">שליחת בקשה</button>
+                    <button class="btn btn-danger" onclick="clearSelections()">איפוס בחירות</button>
+                </div>
+            </div>
+            
+            <!-- Manager Panel -->
+            <div class="manager-panel" id="managerPanel">
+                <h3>פאנל מנהלים</h3>
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="viewAllRequests()">צפייה בכל הבקשות</button>
+                    <button class="btn" onclick="exportAllRequests()">ייצוא לגוגל שיטס</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">איפוס כל הנתונים</button>
+                </div>
+                
+                <div class="requests-list" id="requestsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // רשימת עובדים - עדכנו כאן את השמות שלכם
+        const employees = [
+            'אביאל שיל״ת','אביגד שמואל','אביה דרור','אבישי וקנין','אהד מרק','אהרן גוסט','אודה-י-ה אבלס','אופיר שיינפלד',
+			'אורי הרמוס','אורי עקביה','אוריאל קירש','אושרת טוואבה','אייל הכט','איילון בן עמי','איתי גונן','איתי גילת',
+			'איתמר דנה','איתמר סדיקה','איתמר עצמון','אלה הולנדר','אליעזר קליין','אלירן שמשון','אלעד צברי','אסף גלפרין',
+			'אריה קנציפר','בנימין גרונפלד','גבריאל אגסי','גיא אמיר','גיא ברמן','גל יגיל','דבורה ראק','דביר כנרתי',
+			'דביר קרן צבי','דורי גרוסמן','דניאל הרמן','ולדיסלב קושניב מלניצר','זיו שמש','חגי שיל״ת','חן נפתלי','טלאור כולב',
+			'יאיר נבט','יהונתן קלין','יואב גולדהורן','יואב קדר','יונתן רמות','יעל גרשברג','יעל ובר','ישי רוזנצוויג','כפיר ביטון',
+			'כרמל מורלי','לוטם אהרון','לי עידן','ליאור מאירוביץ','ליה יפרח','לירון ברום','לירי קולמוס','מאי עוז','מאיה נהרי',
+			'מאיה סלנקין','מאיה קריל','מיה לזובסקי','מיה רום','מיקה פרלשטין','מלאכי לוטווק','מנחם הרפנס','מעיין טמשה','מתן אביאב',
+			'נאוה פינקלמן','נדב ליבנה','נועם גרין','נועם לוינשטרן','נחמיה וקשי','נטע וימן','נעם תגר','נעמיה שני',
+			'נריה כהן','נתנאל רובינשטיין','סמדר לאופר','ספי אליאש','סתיו ברוני','עדי הלמן','עדן אשכנזי','עומר כורש',
+			'עומר מלר','עומרי שמעון מור','עופרי רוזן','עזרא גבאי','עידו זיגלבוים','עידו מילר','עידו שלו','עידן טל',
+			'עיינה לייטסטון','עילי גלזר','עינב הרץ','עליזה פיליפון','עמיאל הירשפלד','עמית אייזנקוט','עמית כתר',
+			'עמית סימון','עמר מלר','עפרי רגב','עקיבה גמוס','קארין לובלין','קים לוי','קרינה אפקישב','ראובן כהן',
+			'רון הרוש','רון שלום','רועי איז׳ק','רועי וייס','רועי כהן','רז שמש','רן אידל','רעות לוי','רעם פיאטקובסקי',
+			'רפאל מאירי','שגיא כתרי','שון מקנה','שחר כהן','שי כץ','שי פרידמן','שיר גל און','שיר יהב','שיר סרלאוי',
+			'שיראל אלדר','שירה אלגביש','שירה יניר','שלום אורי דנינו','שלי פאר','שקד ירושלמי','תהילה תאשמע','תומר מידן',
+			'תומר רבאני','תמר אבניאל','תמרה הכהן','תני בנדרש','אביעד גוטמן','אבירם מרום','אופק לוגסי','איתמר כהן',
+			'אלדד ריקלין','אלון בארי','אלון קסל','אלעד רפואה','אריה מאיר','ברק כץ','ברק רונברג','גיא אור לבן','גיא אנתין',
+			'גיא גז','גיא הדרי','דוד ברדיצבסקי','טל יעקב','טל ליבוביץ','טל נתיב','יהונתן בלום','יהונתן קצב','יוגב אלמוג',
+			'יונתן וולוך','יוסי חאלו','ירין יצחק','כפיר ברדה','לימאי נאמני','מאור אגיב','מתן אבלגון','ניר לבנון',
+			'ניתאי רוזנברג','ספיר בטורי','עדן סניור','עומר דפני','עזרא גבאי','עמית פרי','ענת כהנא','עפרי בן אבי','צור הייניג',
+			'רותם אחדות','שחף שוקרון','שלומי מלאכי','שמחה שמרלינג','שמעון מלקמו אבבה','שנהב נדיר','אלי שוב','יצחק רודריגז'
+        ];
+        
+        // ימי השבוע בעברית (מתחיל בראשון)
+        const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+        const shortHebrewDays = ['א\'', 'ב\'', 'ג\'', 'ד\'', 'ה\'', 'ו\'', 'ש\''];
+        
+        // משתנים גלובליים
+        let currentEmployee = '';
+        let selectedShifts = [];
+        let currentDeadlineWeek = null;
+        let isManager = false;
+        const managerPassword = 'manager123'; // שנו את הסיסמה כאן
+        
+        // אתחול
+        document.addEventListener('DOMContentLoaded', function() {
+            populateEmployeeDropdown();
+            updateDeadlineInfo();
+            setInterval(updateDeadlineInfo, 60000); // עדכון כל דקה
+        });
+        
+        // מילוי רשימת עובדים
+        function populateEmployeeDropdown() {
+            const select = document.getElementById('employeeSelect');
+            employees.forEach(employee => {
+                const option = document.createElement('option');
+                option.value = employee;
+                option.textContent = employee;
+                select.appendChild(option);
+            });
+        }
+        
+        // הצגת טופס עובד
+        function showEmployeeForm() {
+            const selectedEmployee = document.getElementById('employeeSelect').value;
+            
+            if (!selectedEmployee) {
+                document.getElementById('employeeForm').classList.remove('active');
+                return;
+            }
+            
+            currentEmployee = selectedEmployee;
+            document.getElementById('formTitle').textContent = `${selectedEmployee} - בחירת משמרות`;
+            
+            // טעינת בחירות שמורות
+            loadEmployeeSelections();
+            
+            // יצירת גריד המשמרות
+            generateShiftsGrid();
+            
+            // הצגת הטופס
+            document.getElementById('employeeForm').classList.add('active');
+        }
+        
+        // יצירת גריד המשמרות
+        function generateShiftsGrid() {
+            const grid = document.getElementById('shiftsGrid');
+            grid.innerHTML = '';
+            
+            currentDeadlineWeek.forEach((date, dayIndex) => {
+                const hebrewDay = shortHebrewDays[dayIndex];
+                const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
+                
+                // משמרת יום
+                const dayId = `${dayIndex}-day`;
+                const daySelected = selectedShifts.includes(dayId);
+                const dayDisabled = selectedShifts.length >= 3 && !daySelected;
+                
+                const dayShift = document.createElement('div');
+                dayShift.className = `shift-option ${daySelected ? 'selected' : ''} ${dayDisabled ? 'disabled' : ''}`;
+                dayShift.onclick = () => toggleShift(dayId);
+                dayShift.innerHTML = `
+                    <div class="shift-date">${dateStr}</div>
+                    <div class="shift-time">יום</div>
+                    ${daySelected ? '<div class="unavailable-badge">✗</div>' : ''}
+                `;
+                grid.appendChild(dayShift);
+                
+                // משמרת לילה
+                const nightId = `${dayIndex}-night`;
+                const nightSelected = selectedShifts.includes(nightId);
+                const nightDisabled = selectedShifts.length >= 3 && !nightSelected;
+                
+                const nightShift = document.createElement('div');
+                nightShift.className = `shift-option ${nightSelected ? 'selected' : ''} ${nightDisabled ? 'disabled' : ''}`;
+                nightShift.onclick = () => toggleShift(nightId);
+                nightShift.innerHTML = `
+                    <div class="shift-date">${dateStr}</div>
+                    <div class="shift-time">לילה</div>
+                    ${nightSelected ? '<div class="unavailable-badge">✗</div>' : ''}
+                `;
+                grid.appendChild(nightShift);
+            });
+            
+            updateCounter();
+        }
+        
+        // החלפת בחירת משמרת
+        function toggleShift(shiftId) {
+            const index = selectedShifts.indexOf(shiftId);
+            
+            if (index > -1) {
+                // הסרת הבחירה
+                selectedShifts.splice(index, 1);
+            } else {
+                // הוספת בחירה אם מתחת למגבלה
+                if (selectedShifts.length < 3) {
+                    selectedShifts.push(shiftId);
+                }
+            }
+            
+            generateShiftsGrid();
+        }
+        
+        // עדכון מונה
+        function updateCounter() {
+            const counter = document.getElementById('shiftsCounter');
+            const count = selectedShifts.length;
+            
+            counter.textContent = `משמרות לא זמינות: ${count}/3`;
+            
+            if (count === 3) {
+                counter.className = 'counter limit-reached';
+                counter.textContent += ' (הגעתם למגבלה)';
+            } else if (count === 2) {
+                counter.className = 'counter warning';
+            } else {
+                counter.className = 'counter';
+            }
+        }
+        
+        // שליחת בקשה
+        function submitRequest() {
+            if (!currentEmployee) {
+                alert('אנא בחרו שם עובד קודם');
+                return;
+            }
+            
+            if (selectedShifts.length === 0) {
+                if (confirm('לא בחרתם משמרות לא זמינות. האם אתם זמינים לכל המשמרות?')) {
+                    saveEmployeeRequest();
+                    alert('הבקשה נשלחה בהצלחה! אתם זמינים לכל המשמרות.');
+                }
+                return;
+            }
+            
+            saveEmployeeRequest();
+            alert(`הבקשה נשלחה בהצלחה! בחרתם ${selectedShifts.length} משמרות שאתם לא זמינים אליהן.`);
+        }
+        
+        // שמירת בקשת עובד
+        function saveEmployeeRequest() {
+            const weekKey = getWeekKey();
+            const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+            
+            if (!allRequests[weekKey]) {
+                allRequests[weekKey] = {};
+            }
+            
+            allRequests[weekKey][currentEmployee] = [...selectedShifts];
+            localStorage.setItem('employeeRequests', JSON.stringify(allRequests));
+        }
+        
+        // טעינת בחירות עובד
+        function loadEmployeeSelections() {
+            const weekKey = getWeekKey();
+            const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+            
+            if (allRequests[weekKey] && allRequests[weekKey][currentEmployee]) {
+                selectedShifts = [...allRequests[weekKey][currentEmployee]];
+            } else {
+                selectedShifts = [];
+            }
+        }
+        
+        // איפוס בחירות
+        function clearSelections() {
+            if (confirm('האם אתם בטוחים שאתם רוצים לאפס את הבחירות?')) {
+                selectedShifts = [];
+                generateShiftsGrid();
+            }
+        }
+        
+        // בדיקת גישת מנהל
+        function checkManagerAccess() {
+            const password = document.getElementById('managerPassword').value;
+            
+            if (password === managerPassword) {
+                isManager = true;
+                document.getElementById('managerPanel').classList.add('active');
+                alert('התחברת בהצלחה כמנהל!');
+            } else if (password) {
+                alert('סיסמה שגויה');
+            }
+        }
+        
+        // צפייה בכל הבקשות (מנהלים בלבד)
+        function viewAllRequests() {
+            if (!isManager) return;
+            
+            const weekKey = getWeekKey();
+            const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+            const weekRequests = allRequests[weekKey] || {};
+            
+            const container = document.getElementById('requestsList');
+            container.innerHTML = '<h4>בקשות עובדים לשבוע הרלוונטי:</h4>';
+            
+            if (Object.keys(weekRequests).length === 0) {
+                container.innerHTML += '<div class="empty-state">אין בקשות עובדים עדיין</div>';
+                return;
+            }
+            
+            Object.keys(weekRequests).forEach(employee => {
+                const shifts = weekRequests[employee];
+                const requestDiv = document.createElement('div');
+                requestDiv.className = 'request-item';
+                
+                let shiftsHTML = '';
+                if (shifts.length === 0) {
+                    shiftsHTML = '<span style="color: green; font-weight: 600;">זמין לכל המשמרות</span>';
+                } else {
+                    shifts.forEach(shiftId => {
+                        const [dayIndex, shiftType] = shiftId.split('-');
+                        const hebrewDay = shortHebrewDays[parseInt(dayIndex)];
+                        const shiftTypeHe = shiftType === 'day' ? 'יום' : 'לילה';
+                        
+                        shiftsHTML += `<span class="request-shift">${hebrewDay} - ${shiftTypeHe}</span>`;
+                    });
+                }
+                
+                requestDiv.innerHTML = `
+                    <div class="request-employee">${employee} (${shifts.length}/3 בקשות)</div>
+                    <div class="request-shifts">${shiftsHTML}</div>
+                `;
+                
+                container.appendChild(requestDiv);
+            });
+        }
+        
+        // ייצוא כל הבקשות
+        function exportAllRequests() {
+            if (!isManager) return;
+            
+            const weekKey = getWeekKey();
+            const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+            const weekRequests = allRequests[weekKey] || {};
+            
+            let csvContent = 'שם עובד,';
+            
+            // יצירת כותרות
+            currentDeadlineWeek.forEach((date, index) => {
+                const hebrewDay = shortHebrewDays[index];
+                const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
+                csvContent += `${dateStr} יום,${dateStr} לילה,`;
+            });
+            csvContent = csvContent.slice(0, -1) + '\n';
+            
+            // הוספת נתוני עובדים
+            employees.forEach(employee => {
+                const employeeShifts = weekRequests[employee] || [];
+                csvContent += `${employee},`;
+                
+                currentDeadlineWeek.forEach((date, dayIndex) => {
+                    const dayId = `${dayIndex}-day`;
+                    const nightId = `${dayIndex}-night`;
+                    
+                    const dayStatus = employeeShifts.includes(dayId) ? 'לא זמין' : 'זמין';
+                    const nightStatus = employeeShifts.includes(nightId) ? 'לא זמין' : 'זמין';
+                    
+                    csvContent += `${dayStatus},${nightStatus},`;
+                });
+                
+                csvContent = csvContent.slice(0, -1) + '\n';
+            });
+            
+            // העתקה ללוח
+            navigator.clipboard.writeText(csvContent).then(() => {
+                alert('הנתונים הועתקו ללוח! תוכלו כעת להדביק אותם בגוגל שיטס.');
+            }).catch(() => {
+                console.log('נתוני הייצוא:', csvContent);
+                alert('הנתונים מוכנים לייצוא - בדקו את הקונסול');
+            });
+        }
+        
+        // איפוס כל הנתונים
+        function clearAllData() {
+            if (!isManager) return;
+            
+            if (confirm('האם אתם בטוחים שאתם רוצים לאפס את כל הנתונים? פעולה זו בלתי הפיכה!')) {
+                localStorage.removeItem('employeeRequests');
+                alert('כל הנתונים נמחקו בהצלחה!');
+                document.getElementById('requestsList').innerHTML = '';
+            }
+        }
+        
+        // חישוב מועד אחרון והשבוע הרלוונטי
+        function updateDeadlineInfo() {
+            const now = new Date();
+            const currentDay = now.getDay(); // 0 = ראשון, 1 = שני, וכו'
+            const currentHour = now.getHours();
+            
+            // בדיקה אם עברנו את המועד אחרון (רביעי 10:00)
+            const passedDeadline = (currentDay > 3) || (currentDay === 3 && currentHour >= 10);
+            
+            let targetWeek;
+            let deadlineDate;
+            
+            if (passedDeadline) {
+                // אם עבר המועד אחרון, הבקשות הן עבור השבוע שאחרי הבא
+                targetWeek = getWeekAfterNext();
+                deadlineDate = getNextWednesday();
+            } else {
+                // אם לא עבר המועד אחרון, הבקשות הן עבור השבוע הבא
+                targetWeek = getNextWeekDates();
+                deadlineDate = getThisWednesday();
+            }
+            
+            currentDeadlineWeek = targetWeek;
+            
+            // עדכון מידע מועד אחרון
+            const timeLeft = deadlineDate.getTime() - now.getTime();
+            const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            
+            let deadlineText = '';
+            if (timeLeft > 0) {
+                const weekType = passedDeadline ? 'השבוע שאחרי הבא' : 'השבוע הבא';
+                deadlineText = `⏰ בקשות עבור ${weekType} | מועד אחרון: ${deadlineDate.toLocaleDateString('he-IL')} בשעה 10:00 (נותרו ${daysLeft} ימים ו-${hoursLeft} שעות)`;
+            } else {
+                deadlineText = `⏰ המועד אחרון עבר - בקשות חדשות הן עבור השבוע שאחרי הבא`;
+            }
+            
+            document.getElementById('deadlineInfo').innerHTML = deadlineText;
+            
+            // עדכון גריד אם יש עובד נבחר
+            if (currentEmployee) {
+                generateShiftsGrid();
+            }
+        }
+        
+        // פונקציות עזר לתאריכים
+        function getNextWeekDates() {
+            const today = new Date();
+            const nextSunday = new Date(today);
+            nextSunday.setDate(today.getDate() + (7 - today.getDay()));
+            
+            const dates = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(nextSunday);
+                date.setDate(nextSunday.getDate() + i);
+                dates.push(date);
+            }
+            return dates;
+        }
+        
+        function getWeekAfterNext() {
+            const today = new Date();
+            const weekAfterNextSunday = new Date(today);
+            weekAfterNextSunday.setDate(today.getDate() + (14 - today.getDay()));
+            
+            const dates = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(weekAfterNextSunday);
+                date.setDate(weekAfterNextSunday.getDate() + i);
+                dates.push(date);
+            }
+            return dates;
+        }
+        
+        function getThisWednesday() {
+            const today = new Date();
+            const wednesday = new Date(today);
+            const daysUntilWednesday = (3 - today.getDay() + 7) % 7;
+            wednesday.setDate(today.getDate() + daysUntilWednesday);
+            wednesday.setHours(10, 0, 0, 0);
+            return wednesday;
+        }
+        
+        function getNextWednesday() {
+            const thisWednesday = getThisWednesday();
+            const nextWednesday = new Date(thisWednesday);
+            nextWednesday.setDate(thisWednesday.getDate() + 7);
+            return nextWednesday;
+        }
+        
+        function getWeekKey() {
+            if (!currentDeadlineWeek || currentDeadlineWeek.length === 0) return 'current';
+            const firstDate = currentDeadlineWeek[0];
+            return `${firstDate.getFullYear()}-${firstDate.getMonth()}-${firstDate.getDate()}`;
+        }
+    </script>
+</body>
+</html>
