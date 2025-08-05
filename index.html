@@ -427,14 +427,15 @@
                     >
                         <option value="">-- בחרו כמות משמרות --</option>
                         <option 
-                            v-for="shifts in shifts" 
-                            :key="shifts" 
-                            :value="shifts"
+                            v-for="shiftsOption in shifts" 
+                            :key="shiftsOption" 
+                            :value="shiftsOption"
                         >
-                            {{ shifts }}
+                            {{ shiftsOption }}
                         </option>
                     </select>
                 </div>
+                
                 <!-- Deadline Info -->
                 <div class="deadline-info">
                     {{ deadlineInfo }}
@@ -519,6 +520,7 @@
                         ✓ מחובר כמנהל
                     </div>
                 </div>
+                
                 <!-- Manager Panel -->
                 <transition name="fade">
                     <div v-if="isManager" class="manager-panel">
@@ -595,8 +597,10 @@
                         'נתן גולד', 'מיכל ברק', 'רון שחר', 'תמר נוי'
                     ],
                     shifts: [
-                      '1', '2', 'צו פתוח'
-                    ]
+                        '1', '2', 'צו פתוח'
+                    ],
+                    selectedNoOfShifts: '',
+                    
                     // Hebrew days
                     shortHebrewDays: ['א\'', 'ב\'', 'ג\'', 'ד\'', 'ה\'', 'ו\'', 'ש\''],
                     
@@ -663,9 +667,14 @@
                         return;
                     }
                     
-                    const savedData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-                    const weekData = savedData[this.weekKey] || {};
-                    this.selectedShifts = weekData[this.selectedEmployee] || [];
+                    try {
+                        const savedData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+                        const weekData = savedData[this.weekKey] || {};
+                        this.selectedShifts = weekData[this.selectedEmployee] || [];
+                    } catch (error) {
+                        console.error('Error loading employee data:', error);
+                        this.selectedShifts = [];
+                    }
                 },
                 
                 toggleShift(shiftId) {
@@ -715,14 +724,19 @@
                 },
                 
                 saveEmployeeRequest() {
-                    const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-                    
-                    if (!allRequests[this.weekKey]) {
-                        allRequests[this.weekKey] = {};
+                    try {
+                        const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+                        
+                        if (!allRequests[this.weekKey]) {
+                            allRequests[this.weekKey] = {};
+                        }
+                        
+                        allRequests[this.weekKey][this.selectedEmployee] = [...this.selectedShifts];
+                        localStorage.setItem('employeeRequests', JSON.stringify(allRequests));
+                    } catch (error) {
+                        console.error('Error saving employee request:', error);
+                        alert('שגיאה בשמירת הבקשה');
                     }
-                    
-                    allRequests[this.weekKey][this.selectedEmployee] = [...this.selectedShifts];
-                    localStorage.setItem('employeeRequests', JSON.stringify(allRequests));
                 },
                 
                 clearSelections() {
@@ -743,9 +757,15 @@
                 },
                 
                 loadAllRequests() {
-                    const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-                    this.allRequests = allRequests[this.weekKey] || {};
-                    this.showRequests = true;
+                    try {
+                        const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+                        this.allRequests = allRequests[this.weekKey] || {};
+                        this.showRequests = true;
+                    } catch (error) {
+                        console.error('Error loading requests:', error);
+                        this.allRequests = {};
+                        this.showRequests = true;
+                    }
                 },
                 
                 async exportAllRequests() {
@@ -800,106 +820,41 @@
                     if (!this.isManager) return;
                     
                     if (confirm('האם אתם בטוחים שאתם רוצים לאפס את כל הנתונים? פעולה זו בלתי הפיכה!')) {
-                        localStorage.removeItem('employeeRequests');
-                        this.allRequests = {};
-                        this.showRequests = false;
-                        alert('כל הנתונים נמחקו בהצלחה!');
+                        try {
+                            localStorage.removeItem('employeeRequests');
+                            this.allRequests = {};
+                            this.showRequests = false;
+                            alert('כל הנתונים נמחקו בהצלחה!');
+                        } catch (error) {
+                            console.error('Error clearing data:', error);
+                            alert('שגיאה במחיקת הנתונים');
+                        }
                     }
                 },
                 
                 // Date utilities
                 updateDeadlineInfo() {
-                    const now = new Date();
-                    const currentDay = now.getDay();
-                    const currentHour = now.getHours();
-                    
-                    // Check if passed deadline (Wednesday 10:00)
-                    const passedDeadline = (currentDay > 3) || (currentDay === 3 && currentHour >= 10);
-                    
-                    let targetWeek;
-                    let deadlineDate;
-                    
-                    if (passedDeadline) {
-                        targetWeek = this.getWeekAfterNext();
-                        deadlineDate = this.getNextWednesday();
-                    } else {
-                        targetWeek = this.getNextWeekDates();
-                        deadlineDate = this.getThisWednesday();
-                    }
-                    
-                    this.currentDeadlineWeek = targetWeek;
-                    
-                    // Update deadline info
-                    const timeLeft = deadlineDate.getTime() - now.getTime();
-                    const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-                    const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    
-                    if (timeLeft > 0) {
-                        const weekType = passedDeadline ? 'השבוע שאחרי הבא' : 'השבוע הבא';
-                        this.deadlineInfo = `⏰ בקשות עבור ${weekType} | מועד אחרון: ${deadlineDate.toLocaleDateString('he-IL')} בשעה 10:00 (נותרו ${daysLeft} ימים ו-${hoursLeft} שעות)`;
-                    } else {
-                        this.deadlineInfo = `⏰ המועד אחרון עבר - בקשות חדשות הן עבור השבוע שאחרי הבא`;
-                    }
-                    
-                    // Reload employee data if needed
-                    if (this.selectedEmployee) {
-                        this.loadEmployeeData();
-                    }
-                },
-                
-                getNextWeekDates() {
-                    const today = new Date();
-                    const nextSunday = new Date(today);
-                    nextSunday.setDate(today.getDate() + (7 - today.getDay()));
-                    
-                    const dates = [];
-                    for (let i = 0; i < 7; i++) {
-                        const date = new Date(nextSunday);
-                        date.setDate(nextSunday.getDate() + i);
-                        dates.push(date);
-                    }
-                    return dates;
-                },
-                
-                getWeekAfterNext() {
-                    const today = new Date();
-                    const weekAfterNextSunday = new Date(today);
-                    weekAfterNextSunday.setDate(today.getDate() + (14 - today.getDay()));
-                    
-                    const dates = [];
-                    for (let i = 0; i < 7; i++) {
-                        const date = new Date(weekAfterNextSunday);
-                        date.setDate(weekAfterNextSunday.getDate() + i);
-                        dates.push(date);
-                    }
-                    return dates;
-                },
-                
-                getThisWednesday() {
-                    const today = new Date();
-                    const wednesday = new Date(today);
-                    const daysUntilWednesday = (3 - today.getDay() + 7) % 7;
-                    wednesday.setDate(today.getDate() + daysUntilWednesday);
-                    wednesday.setHours(10, 0, 0, 0);
-                    return wednesday;
-                },
-                
-                getNextWednesday() {
-                    const thisWednesday = this.getThisWednesday();
-                    const nextWednesday = new Date(thisWednesday);
-                    nextWednesday.setDate(thisWednesday.getDate() + 7);
-                    return nextWednesday;
-                },
-                
-                formatShiftForDisplay(shiftId) {
-                    const [dayIndex, shiftType] = shiftId.split('-');
-                    const hebrewDay = this.shortHebrewDays[parseInt(dayIndex)];
-                    const shiftTypeHe = shiftType === 'day' ? 'יום' : 'לילה';
-                    return `${hebrewDay} - ${shiftTypeHe}`;
-                }
-            }
-        }).mount('#app');
-    </script>
-</body>
-</html>
-
+                    try {
+                        const now = new Date();
+                        const currentDay = now.getDay();
+                        const currentHour = now.getHours();
+                        
+                        // Check if passed deadline (Wednesday 10:00)
+                        const passedDeadline = (currentDay > 3) || (currentDay === 3 && currentHour >= 10);
+                        
+                        let targetWeek;
+                        let deadlineDate;
+                        
+                        if (passedDeadline) {
+                            targetWeek = this.getWeekAfterNext();
+                            deadlineDate = this.getNextWednesday();
+                        } else {
+                            targetWeek = this.getNextWeekDates();
+                            deadlineDate = this.getThisWednesday();
+                        }
+                        
+                        this.currentDeadlineWeek = targetWeek;
+                        
+                        // Update deadline info
+                        const timeLeft = deadlineDate.getTime() - now.getTime();
+                        const daysLeft = Math.floor(
