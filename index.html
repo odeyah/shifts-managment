@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מערכת בקשות משמרות - Vue.js</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -856,5 +856,75 @@
                         this.currentDeadlineWeek = targetWeek;
                         
                         // Update deadline info
+                        // Update deadline info
                         const timeLeft = deadlineDate.getTime() - now.getTime();
-                        const daysLeft = Math.floor(
+                        const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                        const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        
+                        if (timeLeft > 0) {
+                            const weekType = passedDeadline ? 'השבוע שאחרי הבא' : 'השבוע הבא';
+                            this.deadlineInfo = `⏰ בקשות עבור ${weekType} | מועד אחרון: ${deadlineDate.toLocaleDateString('he-IL')} בשעה 10:00 (נותרו ${daysLeft} ימים ו-${hoursLeft} שעות)`;
+                        } else {
+                            this.deadlineInfo = `⏰ המועד אחרון עבר - בקשות חדשות הן עבור השבוע שאחרי הבא`;
+                        }
+                        
+                        // Reload employee data if needed
+                        if (this.selectedEmployee) {
+                            this.loadEmployeeData();
+                        }
+                    } catch (error) {
+                        console.error('Error updating deadline info:', error);
+                        this.deadlineInfo = 'טוען מידע על מועדים...';
+                    }
+                },
+                
+                getNextWeekDates() {
+                    const today = new Date();
+                    const nextSunday = new Date(today);
+                    nextSunday.setDate(today.getDate() + (7 - today.getDay()));
+                    
+                    const dates = [];
+                    for (let i = 0; i < 7; i++) {
+                        const date = new Date(nextSunday);
+                        date.setDate(nextSunday.getDate() + i);
+                        dates.push(date);
+                    }
+                    return dates;
+                },
+                
+                getWeekAfterNext() {
+                    const today = new Date();
+                    const weekAfterNextSunday = new Date(today);
+                    weekAfterNextSunday.setDate(today.getDate() + (14 - today.getDay()));
+                    
+                    const dates = [];
+                    for (let i = 0; i < 7; i++) {
+                        const date = new Date(weekAfterNextSunday);
+                        date.setDate(weekAfterNextSunday.getDate() + i);
+                        dates.push(date);
+                    }
+                    return dates;
+                },
+                
+                getThisWednesday() {
+                    const today = new Date();
+                    const wednesday = new Date(today);
+                    const daysUntilWednesday = (3 - today.getDay() + 7) % 7;
+                    wednesday.setDate(today.getDate() + daysUntilWednesday);
+                    wednesday.setHours(10, 0, 0, 0);
+                    return wednesday;
+                },
+                
+                getNextWednesday() {
+                    const thisWednesday = this.getThisWednesday();
+                    const nextWednesday = new Date(thisWednesday);
+                    nextWednesday.setDate(thisWednesday.getDate() + 7);
+                    return nextWednesday;
+                },
+                
+                formatShiftForDisplay(shiftId) {
+                    const [dayIndex, shiftType] = shiftId.split('-');
+                    const hebrewDay = this.shortHebrewDays[parseInt(dayIndex)];
+                    const shiftTypeHe = shiftType === 'day' ? 'יום' : 'לילה';
+                    return `${hebrewDay} - ${shiftTypeHe}`;
+                }
