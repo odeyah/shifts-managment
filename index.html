@@ -1,486 +1,9 @@
-} catch (error) {
-                        console.error('Error generating worker schedule:', error);
-                        this.addLog('error', '❌ שגיאה ביצירת רשימת עובדים');
-                        alert('שגיאה ביצירת רשימת עובדים');
-                    } finally {
-                        this.loading = false;
-                    }
-                },
-                
-                exportWorkerList() {
-                    if (Object.keys(this.workerAssignments).length === 0) {
-                        alert('אין רשימת עובדים ליצוא');
-                        return;
-                    }
-                    
-                    let csvContent = 'עובד,צוות,יום,סוג משמרת\n';
-                    
-                    // Export worker assignments
-                    Object.keys(this.workerAssignments).forEach(worker => {
-                        const assignments = this.workerAssignments[worker];
-                        
-                        // Team 1 assignments
-                        assignments.team1.forEach(shift => {
-                            const [day, shiftType] = shift.split(' ');
-                            csvContent += `${worker},צוות 1,${day},${shiftType}\n`;
-                        });
-                        
-                        // Team 2 assignments
-                        assignments.team2.forEach(shift => {
-                            const [day, shiftType] = shift.split(' ');
-                            csvContent += `${worker},צוות 2,${day},${shiftType}\n`;
-                        });
-                    });
-                    
-                    // Add summary
-                    csvContent += '\n\nסיכום עובדים:\n';
-                    csvContent += 'עובד,סה"כ משמרות,צוות 1,צוות 2\n';
-                    
-                    Object.keys(this.workerAssignments).forEach(worker => {
-                        const assignments = this.workerAssignments[worker];
-                        const team1Count = assignments.team1.length;
-                        const team2Count = assignments.team2.length;
-                        const totalShifts = team1Count + team2Count;
-                        
-                        if (totalShifts > 0) {
-                            csvContent += `${worker},${totalShifts},${team1Count},${team2Count}\n`;
-                        }
-                    });
-                    
-                    // Copy to clipboard
-                    navigator.clipboard.writeText(csvContent).then(() => {
-                        alert('רשימת העובדים הועתקה ללוח! תוכלו כעת להדביק אותה בגוגל שיטס.');
-                    }).catch(() => {
-                        console.log('Worker list export data:', csvContent);
-                        alert('רשימת העובדים מוכנה לייצוא - בדקו את הקונסול');
-                    });
-                },
-                
-                getTotalAssignedShifts() {
-                    let total = 0;
-                    Object.values(this.workerAssignments).forEach(assignment => {
-                        total += assignment.team1.length + assignment.team2.length;
-                    });
-                    return total;
-                },
-                
-                regenerateSchedule() {
-                    if (confirm('האם אתם בטוחים שאתם רוצים ליצור רשימת עובדים חדשה?')) {
-                        this.generateWorkerSchedule();
-                    }
-                },                getActiveEmployees() {
-                    // Return only employees who submitted availability requests
-                    return this.employees.filter(employee => {
-                        return this.employeeRestrictions.hasOwnProperty(employee.name);
-                    });
-                },
-                
-                calculateFlexibleAvailability(activeEmployees) {
-                    const availability = {
-                        team1: {},
-                        team2: {}
-                    };
-                    
-                    // Initialize availability structure
-                    for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                        availability.team1[dayIndex] = { day: [], night: [] };
-                        availability.team2[dayIndex] = { day: [], night: [] };
-                    }
-                    
-                    // Calculate for each active employee using their predefined preferences
-                    activeEmployees.forEach(employee => {
-                        const settings = this.employeeSettings[employee.name];
-                        const restrictions = this.employeeRestrictions[employee.name] || [];
-                        
-                        for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                            const dayRestriction = `${dayIndex}-day`;
-                            const nightRestriction = `${dayIndex}-night`;
-                            
-                            // Check day shift availability based on employee preferences
-                            if (!restrictions.includes(dayRestriction) && 
-                                (employee.dayOrNight === 'day' || employee.dayOrNight === 'both')) {
-                                
-                                if (settings.allowedTeams === 'team1' || settings.allowedTeams === 'both') {
-                                    availability.team1[dayIndex].day.push({
-                                        name: employee.name,
-                                        priority: employee.priority,
-                                        maxShifts: employee.NoOfShifts,
-                                        workPattern: settings.workPattern,
-                                        teamRestriction: employee.teamRestriction
-                                    });
-                                }
-                                
-                                if (settings.allowedTeams === 'team2' || settings.allowedTeams === 'both') {
-                                    availability.team2[dayIndex].day.push({
-                                        name: employee.name,
-                                        priority: employee.priority,
-                                        maxShifts: employee.NoOfShifts,
-                                        workPattern: settings.workPattern,
-                                        teamRestriction: employee.teamRestriction
-                                    });
-                                }
-                            }
-                            
-                            // Check night shift availability based on employee preferences
-                            if (!restrictions.includes(nightRestriction) && 
-                                (employee.dayOrNight === 'night' || employee.dayOrNight === 'both')) {
-                                
-                                if (settings.allowedTeams === 'team1' || settings.allowedTeams === 'both') {
-                                    availability.team1[dayIndex].night.push({
-                                        name: employee.name,
-                                        priority: employee.priority,
-                                        maxShifts: employee.NoOfShifts,
-                                        workPattern: settings.workPattern,
-                                        teamRestriction: employee.teamRestriction
-                                    });
-                                }
-                                
-                                if (settings.allowedTeams === 'team2' || settings.allowedTeams === 'both') {
-                                    availability.team2[dayIndex].night.push({
-                                        name: employee.name,
-                                        priority: employee.priority,
-                                        maxShifts: employee.NoOfShifts,
-                                        workPattern: settings.workPattern,
-                                        teamRestriction: employee.teamRestriction
-                                    });
-                                }
-                            }
-                        }
-                    });
-                    
-                    return availability;
-                },
-                
-                getPatternBonus(employeeName, shiftType, currentShiftTypes) {
-                    const settings = this.employeeSettings[employeeName];
-                    const workPattern = settings.workPattern;
-                    
-                    switch (workPattern) {
-                        case 'day_preferred':
-                            // Prefers 2 day + 1 night
-                            if (shiftType === 'day' && currentShiftTypes.day < 2) return 3;
-                            if (shiftType === 'night' && currentShiftTypes.night < 1 && currentShiftTypes.day >= 1) return 2;
-                            break;
-                            
-                        case 'night_preferred':
-                            // Prefers 2 night + 1 day
-                            if (shiftType === 'night' && currentShiftTypes.night < 2) return 3;
-                            if (shiftType === 'day' && currentShiftTypes.day < 1 && currentShiftTypes.night >= 1) return 2;
-                            break;
-                            
-                        case 'day_only':
-                            return shiftType === 'day' ? 4 : -2;
-                            
-                        case 'night_only':
-                            return shiftType === 'night' ? 4 : -2;
-                            
-                        case 'flexible':
-                        default:
-                            // Equal preference for mixed patterns
-                            return 1;
-                    }
-                    
-                    return 0;
-                },
-                
-                canAssignFlexibleShift(employeeName, dayIndex, shiftType, schedule, employeeShiftTypes) {
-                    // Rule 1: Check if employee has reached their shift limit
-                    const settings = this.employeeSettings[employeeName];
-                    const currentTotal = employeeShiftTypes[employeeName].day + employeeShiftTypes[employeeName].night;
-                    
-                    if (currentTotal >= settings.maxShifts) {
-                        return false;
-                    }
-                    
-                    // Rule 2: Prevent consecutive day-night shifts (same day)
-                    if (this.workPatternRules.noConsecutiveDayNight) {
-                        // Check if employee is already assigned to the opposite shift the same day
-                        const oppositeShift = shiftType === 'day' ? 'night' : 'day';
-                        if (this.wasAssignedToShift(employeeName, dayIndex, oppositeShift, schedule)) {
-                            this.addLog('warning', `🚫 מונע הקצאת ${shiftType === 'day' ? 'יום' : 'לילה'} באותו יום שכבר יש ${oppositeShift === 'day' ? 'יום' : 'לילה'} עבור ${employeeName}`);
-                            return false;
-                        }
-                        
-                        // Check if employee worked night yesterday and this is a day shift
-                        if (shiftType === 'day' && dayIndex > 0) {
-                            if (this.wasAssignedToShift(employeeName, dayIndex - 1, 'night', schedule)) {
-                                this.addLog('warning', `🚫 מונע הקצאת יום למחרת לילה עבור ${employeeName}`);
-                                return false;
-                            }
-                        }
-                        
-                        // Check if employee will work night tomorrow after day shift today
-                        if (shiftType === 'night' && dayIndex < 6) {
-                            if (this.wasAssignedToShift(employeeName, dayIndex, 'day', schedule)) {
-                                this.addLog('warning', `🚫 מונע הקצאת לילה אחרי יום באותו יום עבור ${employeeName}`);
-                                return false;
-                            }
-                        }
-                    }
-                    
-                    // Rule 3: Check work pattern constraints
-                    const workPattern = settings.workPattern;
-                    const currentShifts = employeeShiftTypes[employeeName];
-                    
-                    switch (workPattern) {
-                        case 'day_only':
-                            return shiftType === 'day';
-                            
-                        case 'night_only':
-                            return shiftType === 'night';
-                            
-                        case 'day_preferred':
-                            // Allow 2 day + 1 night maximum
-                            if (shiftType === 'day' && currentShifts.day >= 2) return false;
-                            if (shiftType === 'night' && currentShifts.night >= 1) return false;
-                            break;
-                            
-                        case 'night_preferred':
-                            // Allow 2 night + 1 day maximum
-                            if (shiftType === 'night' && currentShifts.night >= 2) return false;
-                            if (shiftType === 'day' && currentShifts.day >= 1) return false;
-                            break;
-                            
-                        case 'flexible':
-                        default:
-                            // Allow any combination up to maxShifts
-                            break;
-                    }
-                    
-                    return true;
-                },
-                
-                updateWorkPattern(employeeName) {
-                    const settings = this.employeeSettings[employeeName];
-                    
-                    switch (settings.workPattern) {
-                        case 'flexible':
-                            settings.preferredShift = 'any';
-                            break;
-                        case 'day_preferred':
-                            settings.preferredShift = 'day';
-                            break;
-                        case 'night_preferred':
-                            settings.preferredShift = 'night';
-                            break;
-                        case 'day_only':
-                            settings.preferredShift = 'day';
-                            break;
-                        case 'night_only':
-                            settings.preferredShift = 'night';
-                            break;
-                    }
-                },
-                
-                getDayNightLabel(dayOrNight) {
-                    switch(dayOrNight) {
-                        case 'day': return 'יום בלבד';
-                        case 'night': return 'לילה בלבד';
-                        case 'both': return 'יום ולילה';
-                        default: return 'לא מוגדר';
-                    }
-                },
-                
-                getPriorityLabel(priority) {
-                    switch(priority) {
-                        case 'high': return 'גבוהה';
-                        case 'medium': return 'בינונית';
-                        case 'low': return 'נמוכה';
-                        default: return 'לא מוגדר';
-                    }
-                },
-                
-                getWorkPatternLabel(dayOrNight) {
-                    switch(dayOrNight) {
-                        case 'day': return 'יום בלבד';
-                        case 'night': return 'לילה בלבד';
-                        case 'both': return 'גמיש (יום ולילה)';
-                        default: return 'לא מוגדר';
-                    }
-                },                assignWorkPatterns() {
-                    const assignments = {};
-                    
-                    this.employees.forEach(employee => {
-                        const settings = this.employeeSettings[employee.name];
-                        assignments[employee.name] = {
-                            workPattern: settings.workPattern,
-                            expectedShifts: settings.workPattern === 'day' ? 4 : 3,
-                            assignedShifts: []
-                        };
-                    });
-                    
-                    this.addLog('info', `📋 הוקצו דפוסי עבודה: ${Object.values(assignments).filter(a => a.workPattern === 'day').length} עובדי יום, ${Object.values(assignments).filter(a => a.workPattern === 'night').length} עובדי לילה`);
-                    
-                    return assignments;
-                },
-                
-                calculateSmartAvailability(employeeAssignments) {
-                    const availability = {
-                        team1: {},
-                        team2: {}
-                    };
-                    
-                    // Initialize availability structure
-                    for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                        availability.team1[dayIndex] = { day: [], night: [] };
-                        availability.team2[dayIndex] = { day: [], night: [] };
-                    }
-                    
-                    // Calculate for each employee with smart rules
-                    this.employees.forEach(employee => {
-                        const settings = this.employeeSettings[employee.name];
-                        const restrictions = this.employeeRestrictions[employee.name] || [];
-                        const workPattern = employeeAssignments[employee.name].workPattern;
-                        
-                        for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                            const dayRestriction = `${dayIndex}-day`;
-                            const nightRestriction = `${dayIndex}-night`;
-                            
-                            // Check day shift availability (only for day workers or emergency)
-                            if (!restrictions.includes(dayRestriction) && 
-                                (workPattern === 'day' || (workPattern === 'night' && this.isEmergencyNeed(dayIndex, 'day')))) {
-                                
-                                if (settings.allowedTeams === 'team1' || settings.allowedTeams === 'both') {
-                                    availability.team1[dayIndex].day.push({
-                                        name: employee.name,
-                                        role: employee.role,
-                                        priority: settings.priority,
-                                        maxShifts: settings.maxShifts,
-                                        workPattern: workPattern,
-                                        teamRestriction: employee.teamRestriction
-                                    });
-                                }
-                                
-                                if (settings.allowedTeams === 'team2' || settings.allowedTeams === 'both') {
-                                    availability.team2[dayIndex].day.push({
-                                        name: employee.name,
-                                        role: employee.role,
-                                        priority: settings.priority,
-                                        maxShifts: settings.maxShifts,
-                                        workPattern: workPattern,
-                                        teamRestriction: employee.teamRestriction
-                                    });
-                                }
-                            }
-                            
-                            // Check night shift availability (only for night workers or emergency)
-                            if (!restrictions.includes(nightRestriction) && 
-                                (workPattern === 'night' || (workPattern === 'day' && this.isEmergencyNeed(dayIndex, 'night')))) {
-                                
-                                if (settings.allowedTeams === 'team1' || settings.allowedTeams === 'both') {
-                                    availability.team1[dayIndex].night.push({
-                                        name: employee.name,
-                                        role: employee.role,
-                                        priority: settings.priority,
-                                        maxShifts: settings.maxShifts,
-                                        workPattern: workPattern,
-                                        teamRestriction: employee.teamRestriction
-                                    });
-                                }
-                                
-                                if (settings.allowedTeams === 'team2' || settings.allowedTeams === 'both') {
-                                    availability.team2[dayIndex].night.push({
-                                        name: employee.name,
-                                        role: employee.role,
-                                        priority: settings.priority,
-                                        maxShifts: settings.maxShifts,
-                                        workPattern: workPattern,
-                                        teamRestriction: employee.teamRestriction
-                                    });
-                                }
-                            }
-                        }
-                    });
-                    
-                    return availability;
-                },
-                
-                isEmergencyNeed(dayIndex, shiftType) {
-                    // Can be enhanced to check if there's shortage of workers for specific shifts
-                    return false; // For now, stick to patterns
-                },
-                
-                canAssignShift(employeeName, dayIndex, shiftType, schedule, employeeAssignments) {
-                    // Rule 1: Check if employee has reached their shift limit
-                    const assignment = employeeAssignments[employeeName];
-                    if (assignment.assignedShifts.length >= assignment.expectedShifts) {
-                        return false;
-                    }
-                    
-                    // Rule 2: Prevent consecutive day-night shifts
-                    if (this.workPatternRules.noConsecutiveDayNight) {
-                        // Check if employee worked the previous night (and this is a day shift)
-                        if (shiftType === 'day' && dayIndex > 0) {
-                            if (this.wasAssignedToShift(employeeName, dayIndex - 1, 'night', schedule)) {
-                                this.addLog('warning', `🚫 מונע הקצאת יום למחרת לילה עבור ${employeeName}`);
-                                return false;
-                            }
-                        }
-                        
-                        // Check if employee will work night after day (this is a night shift)
-                        if (shiftType === 'night') {
-                            if (this.wasAssignedToShift(employeeName, dayIndex, 'day', schedule)) {
-                                this.addLog('warning', `🚫 מונע הקצאת לילה אחרי יום עבור ${employeeName}`);
-                                return false;
-                            }
-                        }
-                    }
-                    
-                    // Rule 3: Prefer work pattern alignment
-                    const settings = this.employeeSettings[employeeName];
-                    const workPattern = settings.workPattern;
-                    
-                    if (workPattern === 'day' && shiftType === 'night') {
-                        // Day worker assigned to night - only in emergency
-                        return false;
-                    }
-                    
-                    if (workPattern === 'night' && shiftType === 'day') {
-                        // Night worker assigned to day - only in emergency
-                        return false;
-                    }
-                    
-                    return true;
-                },
-                
-                wasAssignedToShift(employeeName, dayIndex, shiftType, schedule) {
-                    // Check both teams for assignment
-                    for (let teamId of ['team1', 'team2']) {
-                        if (schedule[teamId][dayIndex]) {
-                            const shift = schedule[teamId][dayIndex][shiftType];
-                            if (shift.workers.includes(employeeName)) {
-                                return true;
-                            }
-                        }
-                    }
-                    return false;
-                },
-                
-                updateWorkPattern(employeeName) {
-                    const settings = this.employeeSettings[employeeName];
-                    if (settings.workPattern === 'day') {
-                        settings.maxShifts = this.workPatternRules.dayShiftsPerWeek;
-                        settings.preferredShift = 'day';
-                    } else {
-                        settings.maxShifts = this.workPatternRules.nightShiftsPerWeek;
-                        settings.preferredShift = 'night';
-                    }
-                },
-                
-                getTeamRestrictionLabel(restriction) {
-                    switch(restriction) {
-                        case 'team1': return 'צוות 1 בלבד';
-                        case 'team2': return 'צוות 2 בלבד';
-                        case 'both': return 'שני הצוותים';
-                        default: return 'לא מוגדר';
-                    }
-                },                    // Team requirements
-                    teamRequirements: {<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת ניהול משמרות - 2 צוותים</title>
+    <title>מערכת בקשות משמרות - Vue.js</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.min.js"></script>
     <style>
         * {
@@ -498,7 +21,7 @@
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 800px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
@@ -519,151 +42,67 @@
             font-weight: 300;
         }
         
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
         .content {
             padding: 30px;
         }
         
-        .tabs {
-            display: flex;
+        .employee-selector {
             background: #f8f9fa;
-            border-bottom: 2px solid #e9ecef;
-            margin-bottom: 30px;
-        }
-        
-        .tab {
-            flex: 1;
-            padding: 15px;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
             text-align: center;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            border-bottom: 3px solid transparent;
         }
         
-        .tab:hover {
-            background: #e9ecef;
+        .employee-selector h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 1.3rem;
         }
         
-        .tab.active {
+        .employee-dropdown {
+            width: 100%;
+            max-width: 300px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1.1rem;
             background: white;
-            border-bottom-color: #4facfe;
-            color: #4facfe;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
         }
         
-        .team-structure {
+        .employee-dropdown:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+        
+        .manager-login {
             background: linear-gradient(135deg, #74b9ff, #0984e3);
             color: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-        }
-        
-        .team-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 15px;
-        }
-        
-        .team-info {
-            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
             padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .manager-login input {
+            padding: 10px 15px;
+            border: 1px solid rgba(255,255,255,0.3);
             border-radius: 8px;
-        }
-        
-        .team-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        .shift-requirements {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            font-size: 0.9rem;
-        }
-        
-        .employee-setup {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        
-        .employee-card {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            border: 2px solid #e9ecef;
-            transition: all 0.3s ease;
-        }
-        
-        .employee-card:hover {
-            border-color: #4facfe;
-            transform: translateY(-2px);
-        }
-        
-        .employee-card.manager {
-            border-color: #ffc107;
-            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-        }
-        
-        .employee-card.worker {
-            border-color: #28a745;
-            background: linear-gradient(135deg, #d4edda, #c3e6cb);
-        }
-        
-        .employee-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .role-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        
-        .manager-badge {
-            background: #ffc107;
-            color: #856404;
-        }
-        
-        .worker-badge {
-            background: #28a745;
+            background: rgba(255,255,255,0.1);
             color: white;
+            margin: 0 10px;
         }
         
-        .employee-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .control-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-        
-        .control-row label {
-            font-size: 0.9rem;
-            min-width: 60px;
-        }
-        
-        .control-row select,
-        .control-row input {
-            flex: 1;
-            padding: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+        .manager-login input::placeholder {
+            color: rgba(255,255,255,0.7);
         }
         
         .btn {
@@ -694,116 +133,148 @@
             background: linear-gradient(135deg, #4facfe, #00f2fe);
         }
         
+        .btn-primary:hover {
+            box-shadow: 0 10px 20px rgba(79,172,254,0.3);
+        }
+        
         .btn-danger {
             background: linear-gradient(135deg, #ff6b6b, #ee5a52);
         }
         
-        .btn-large {
-            font-size: 1.3rem;
-            padding: 20px 40px;
+        .btn-success {
+            background: linear-gradient(135deg, #00b894, #00a085);
         }
         
-        .schedule-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-top: 20px;
-        }
-        
-        .team-schedule {
+        .employee-form {
             background: #f8f9fa;
             border-radius: 12px;
-            padding: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            animation: fadeIn 0.5s ease;
         }
         
-        .team-schedule h4 {
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-title {
+            font-size: 1.4rem;
+            font-weight: 600;
             color: #2c3e50;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             text-align: center;
-            padding: 10px;
-            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
-        .team1-header {
+        .form-title::before {
+            content: "👤";
+            font-size: 1.2rem;
+        }
+        
+        .deadline-info {
             background: linear-gradient(135deg, #74b9ff, #0984e3);
             color: white;
-        }
-        
-        .team2-header {
-            background: linear-gradient(135deg, #00b894, #00a085);
-            color: white;
-        }
-        
-        .schedule-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .schedule-table th,
-        .schedule-table td {
-            padding: 12px 8px;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
             text-align: center;
-            border-bottom: 1px solid #e9ecef;
             font-size: 0.9rem;
         }
         
-        .schedule-table th {
-            background: #6c757d;
-            color: white;
-            font-weight: 600;
-        }
-        
-        .schedule-table tr:hover {
-            background: #f8f9fa;
-        }
-        
-        .manager-cell {
-            background: #fff3cd;
-            color: #856404;
-            font-weight: 600;
-        }
-        
-        .worker-cell {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .empty-cell {
-            background: #f8d7da;
-            color: #721c24;
-            font-style: italic;
-        }
-        
-        .stats {
+        .shifts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
-            margin: 20px 0;
+            margin-bottom: 20px;
         }
         
-        .stat-card {
+        .shift-option {
             background: white;
-            padding: 15px;
+            border: 2px solid #e9ecef;
             border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-right: 4px solid #4facfe;
+            position: relative;
+            user-select: none;
         }
         
-        .stat-number {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #4facfe;
+        .shift-option:hover:not(.disabled) {
+            border-color: #4facfe;
+            transform: translateY(-2px);
         }
         
-        .stat-label {
+        .shift-option.selected {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border-color: #ff6b6b;
+            transform: scale(1.02);
+        }
+        
+        .shift-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f8f9fa;
+        }
+        
+        .shift-date {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
             color: #6c757d;
-            margin-top: 5px;
-            font-size: 0.8rem;
+        }
+        
+        .shift-option.selected .shift-date {
+            color: white;
+        }
+        
+        .shift-time {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .unavailable-badge {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .counter {
+            text-align: center;
+            font-size: 1rem;
+            color: #6c757d;
+            margin: 20px 0;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .counter.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .counter.limit-reached {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
         
         .alert {
@@ -830,6 +301,83 @@
             border: 1px solid #99d6ff;
         }
         
+        .form-actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .manager-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 25px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .requests-list {
+            margin-top: 20px;
+        }
+        
+        .request-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-right: 4px solid #4facfe;
+            transition: all 0.3s ease;
+        }
+        
+        .request-item:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .request-employee {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .request-shifts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .request-shift {
+            background: #ffebee;
+            color: #c62828;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .available-badge {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            border: 1px solid #c8e6c9;
+            font-weight: 600;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 30px;
+        }
+        
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.5s ease;
+        }
+        
+        .fade-enter-from, .fade-leave-to {
+            opacity: 0;
+        }
+        
         .loading {
             display: inline-block;
             width: 20px;
@@ -838,39 +386,11 @@
             border-top: 3px solid #4facfe;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-left: 10px;
         }
         
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-        
-        .validation-log {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .log-entry {
-            padding: 5px 0;
-            border-bottom: 1px solid #e9ecef;
-            font-size: 0.9rem;
-        }
-        
-        .log-success {
-            color: #28a745;
-        }
-        
-        .log-warning {
-            color: #ffc107;
-        }
-        
-        .log-error {
-            color: #dc3545;
         }
     </style>
 </head>
@@ -878,292 +398,186 @@
     <div id="app">
         <div class="container">
             <div class="header">
-                <h1>מערכת ניהול משמרות</h1>
+                <h1>בקשות משמרות</h1>
+                <p>בחרו עד 3 משמרות שאתם לא יכולים להשתבץ בהם</p>
             </div>
             
             <div class="content">
-                <div class="tabs">
-                    <div 
-                        class="tab active" 
-                        :class="{ active: activeTab === 'schedule' }"
-                        @click="activeTab = 'schedule'"
+                <!-- Employee Selection -->
+                <div class="employee-selector">
+                    <h3>בחרו את השם שלכם:</h3>
+                    <select 
+                        class="employee-dropdown" 
+                        v-model="selectedEmployee"
+                        @change="loadEmployeeData"
                     >
-                        יצירת לוח משמרות
-                    </div>
-                    <div 
-                        class="tab" 
-                        :class="{ active: activeTab === 'employees' }"
-                        @click="activeTab = 'employees'"
-                    >
-                        הגדרות 
-                    </div>
-                    <div 
-                        class="tab" 
-                        :class="{ active: activeTab === 'analysis' }"
-                        @click="activeTab = 'analysis'"
-                    >
-                        ניתוח ודוחות
-                    </div>
-                </div>
-                
-                <!-- Employee Setup Tab -->
-                <div v-if="activeTab === 'employees'">
-                    <div class="alert alert-info">
-                        <strong>הוראות:</strong> הגדירו לכל עובד את התפקיד שלו (מנהל/עובד), את הצוות שהוא יכול לעבוד בו, והעדפותיו.
-                    </div>
-                    
-                    <div class="employee-setup">
-                        <div 
+                        <option value="">-- בחרו שם --</option>
+                        <option 
                             v-for="employee in employees" 
-                            :key="employee"
-                            class="employee-card"
-                            :class="employeeSettings[employee].role"
+                            :key="employee" 
+                            :value="employee"
                         >
-                            <div class="employee-name">
-                                {{ employee }}
-                                <span 
-                                    class="role-badge"
-                                    :class="employeeSettings[employee].role === 'manager' ? 'manager-badge' : 'worker-badge'"
-                                >
-                                    {{ employeeSettings[employee].role === 'manager' ? 'מנהל' : 'עובד' }}
-                                </span>
-                            </div>
-                            
-                            <div class="control-row">
-                                <label>תפקיד:</label>
-                                <select v-model="employeeSettings[employee].role">
-                                    <option value="manager">מנהל</option>
-                                    <option value="worker">עובד</option>
-                                </select>
-                            </div>
-                            
-                            <div class="control-row">
-                                <label>צוותים:</label>
-                                <select v-model="employeeSettings[employee].allowedTeams">
-                                    <option value="team1">צוות 1 בלבד</option>
-                                    <option value="team2">צוות 2 בלבד</option>
-                                    <option value="both">שני הצוותים</option>
-                                </select>
-                            </div>
-                            
-                            <div class="control-row">
-                                <label>עדיפות:</label>
-                                <select v-model="employeeSettings[employee].priority">
-                                    <option value="high">גבוהה</option>
-                                    <option value="medium">בינונית</option>
-                                    <option value="low">נמוכה</option>
-                                </select>
-                            </div>
-                            
-                            <div class="control-row">
-                                <label>מקס' משמרות:</label>
-                                <input 
-                                    v-model.number="employeeSettings[employee].maxShifts" 
-                                    type="number" 
-                                    min="1" 
-                                    max="7"
-                                >
-                            </div>
-                            
-                            <div class="control-row">
-                                <label>העדפת משמרת:</label>
-                                <select v-model="employeeSettings[employee].preferredShift">
-                                    <option value="any">הכל</option>
-                                    <option value="day">יום בלבד</option>
-                                    <option value="night">לילה בלבד</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="text-align: center; margin-top: 30px;">
-                        <button class="btn btn-primary" @click="saveEmployeeSettings">
-                            שמירת הגדרות עובדים
-                        </button>
-                        <button class="btn" @click="resetEmployeeSettings">
-                            איפוס להגדרות ברירת מחדל
-                        </button>
-                    </div>
+                            {{ employee }}
+                        </option>
+                    </select>
+                    <select 
+                        class="employee-dropdown" 
+                        v-model="selectedNoOfShifts"
+                        @change="loadEmployeeData"
+                    >
+                        <option value="">-- בחרו כמות משמרות --</option>
+                        <option 
+                            v-for="shifts in shifts" 
+                            :key="shifts" 
+                            :value="shifts"
+                        >
+                            {{ shifts }}
+                        </option>
+                    </select>
+                </div>
+                <!-- Deadline Info -->
+                <div class="deadline-info">
+                    {{ deadlineInfo }}
                 </div>
                 
-                <!-- Schedule Generation Tab -->
-                <div v-if="activeTab === 'schedule'">
-                        <div class="stats">
-                            <div class="stat-card">
-                                <div class="stat-number">{{ employees.length }}</div>
-                                <div class="stat-label">סה"כ עובדים</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">{{ Object.keys(employeeRestrictions).length }}</div>
-                                <div class="stat-label">עובדים שמילאו בקשה</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">{{ employees.length - Object.keys(employeeRestrictions).length }}</div>
-                                <div class="stat-label">עובדים ללא בקשה</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">{{ team1Available }}</div>
-                                <div class="stat-label">זמינים צוות 1</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">{{ team2Available }}</div>
-                                <div class="stat-label">זמינים צוות 2</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">{{ totalRestrictions }}</div>
-                                <div class="stat-label">בקשות אי-זמינות</div>
-                            </div>
-                        </div>
-                    
-                    <div style="text-align: center; margin: 30px 0;">
-                        <button 
-                            class="btn btn-primary btn-large" 
-                            @click="generateTeamSchedule"
-                            :disabled="loading"
-                        >
-                            <span v-if="loading" class="loading"></span>
-                            {{ loading ? 'יוצר לוח משמרות...' : 'יצירת לוח משמרות חכם' }}
-                        </button>
-                        
-                        <button 
-                            v-if="hasGeneratedSchedule"
-                            class="btn" 
-                            @click="exportSchedule"
-                        >
-                            ייצוא לגוגל שיטס
-                        </button>
-                        
-                        <button 
-                            v-if="hasGeneratedSchedule"
-                            class="btn btn-danger" 
-                            @click="regenerateSchedule"
-                        >
-                            יצירה מחדש
-                        </button>
-                    </div>
-                    
-                    <div v-if="validationLog.length > 0" class="validation-log">
-                        <h4>יומן יצירת לוח משמרות:</h4>
-                        <div 
-                            v-for="(log, index) in validationLog" 
-                            :key="index"
-                            class="log-entry"
-                            :class="getLogClass(log.type)"
-                        >
-                            {{ log.message }}
-                        </div>
-                    </div>
-                    
-                    <div v-if="hasGeneratedSchedule" class="schedule-container">
-                        <div class="team-schedule">
-                            <h4 class="team1-header">🔵 צוות 1</h4>
-                            <table class="schedule-table">
-                                <thead>
-                                    <tr>
-                                        <th>יום</th>
-                                        <th>מנהלי יום</th>
-                                        <th>עובדי יום</th>
-                                        <th>מנהל לילה</th>
-                                        <th>עובדי לילה</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(day, index) in hebrewDays" :key="index">
-                                        <td><strong>{{ day }}</strong></td>
-                                        <td class="manager-cell">
-                                            {{ formatTeamMembers(generatedSchedule.team1?.[index]?.day?.managers) }}
-                                        </td>
-                                        <td class="worker-cell">
-                                            {{ formatTeamMembers(generatedSchedule.team1?.[index]?.day?.workers) }}
-                                        </td>
-                                        <td class="manager-cell">
-                                            {{ formatTeamMembers(generatedSchedule.team1?.[index]?.night?.managers) }}
-                                        </td>
-                                        <td class="worker-cell">
-                                            {{ formatTeamMembers(generatedSchedule.team1?.[index]?.night?.workers) }}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                <!-- Employee Form -->
+                <transition name="fade">
+                    <div v-if="selectedEmployee" class="employee-form">
+                        <div class="form-title">
+                            {{ selectedEmployee }} - בחירת משמרות
                         </div>
                         
-                        <div class="team-schedule">
-                            <h4 class="team2-header">🟢 צוות 2</h4>
-                            <table class="schedule-table">
-                                <thead>
-                                    <tr>
-                                        <th>יום</th>
-                                        <th>מנהל יום</th>
-                                        <th>עובדי יום</th>
-                                        <th>מנהל לילה</th>
-                                        <th>עובדי לילה</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(day, index) in hebrewDays" :key="index">
-                                        <td><strong>{{ day }}</strong></td>
-                                        <td class="manager-cell">
-                                            {{ formatTeamMembers(generatedSchedule.team2?.[index]?.day?.managers) }}
-                                        </td>
-                                        <td class="worker-cell">
-                                            {{ formatTeamMembers(generatedSchedule.team2?.[index]?.day?.workers) }}
-                                        </td>
-                                        <td class="manager-cell">
-                                            {{ formatTeamMembers(generatedSchedule.team2?.[index]?.night?.managers) }}
-                                        </td>
-                                        <td class="worker-cell">
-                                            {{ formatTeamMembers(generatedSchedule.team2?.[index]?.night?.workers) }}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Analysis Tab -->
-                <div v-if="activeTab === 'analysis'">
-                    <div class="alert alert-info">
-                        <strong>ניתוח לוח המשמרות:</strong> בדיקת עמידה בדרישות והתפלגות עומסי עבודה.
-                    </div>
-                    
-                    <div v-if="!hasGeneratedSchedule" class="alert alert-warning">
-                        יש ליצור לוח משמרות תחילה כדי לראות ניתוח מפורט.
-                    </div>
-                    
-                    <div v-if="hasGeneratedSchedule">
-                        <div class="stats">
-                            <div class="stat-card">
-                                <div class="stat-number">{{ analysisData.coveragePercent }}%</div>
-                                <div class="stat-label">כיסוי משמרות</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">{{ analysisData.managerCoverage }}%</div>
-                                <div class="stat-label">כיסוי מנהלים</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">{{ analysisData.workerCoverage }}%</div>
-                                <div class="stat-label">כיסוי עובדים</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">{{ analysisData.violations }}</div>
-                                <div class="stat-label">הפרות דרישות</div>
-                            </div>
+                        <div class="alert alert-info">
+                            <strong>הוראות:</strong> בחרו עד 3 משמרות שאתם <strong>לא יכולים</strong> לעבוד בשבוע הרלוונטי
                         </div>
                         
-                        <div class="validation-log">
-                            <h4>דוח בדיקת דרישות:</h4>
+                        <div class="shifts-grid">
                             <div 
-                                v-for="(issue, index) in analysisData.issues" 
+                                v-for="(shift, index) in availableShifts" 
                                 :key="index"
-                                class="log-entry"
-                                :class="getLogClass(issue.type)"
+                                class="shift-option"
+                                :class="{
+                                    selected: selectedShifts.includes(shift.id),
+                                    disabled: selectedShifts.length >= 3 && !selectedShifts.includes(shift.id)
+                                }"
+                                @click="toggleShift(shift.id)"
                             >
-                                {{ issue.message }}
+                                <div class="shift-date">{{ shift.dateStr }}</div>
+                                <div class="shift-time">{{ shift.type }}</div>
+                                <div v-if="selectedShifts.includes(shift.id)" class="unavailable-badge">✗</div>
+                            </div>
+                        </div>
+                        
+                        <div 
+                            class="counter"
+                            :class="{
+                                'warning': selectedShifts.length === 2,
+                                'limit-reached': selectedShifts.length === 3
+                            }"
+                        >
+                            משמרות לא זמינות: {{ selectedShifts.length }}/3
+                            <span v-if="selectedShifts.length === 3"> (הגעתם למגבלה)</span>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button 
+                                class="btn btn-success" 
+                                @click="submitRequest"
+                                :disabled="loading"
+                            >
+                                <span v-if="loading" class="loading"></span>
+                                {{ loading ? 'שולח...' : 'שליחת בקשה' }}
+                            </button>
+                            <button 
+                                class="btn btn-danger" 
+                                @click="clearSelections"
+                                :disabled="loading || selectedShifts.length === 0"
+                            >
+                                איפוס בחירות
+                            </button>
+                        </div>
+                    </div>
+                </transition>
+                
+                <!-- Manager Login -->
+                <div class="manager-login">
+                    <strong>כניסת מנהלים:</strong>
+                    <input 
+                        type="password" 
+                        v-model="managerPasswordInput"
+                        placeholder="סיסמת מנהל"
+                        @keyup.enter="checkManagerAccess"
+                    >
+                    <button 
+                        class="btn btn-primary" 
+                        @click="checkManagerAccess"
+                        :disabled="!managerPasswordInput"
+                    >
+                        כניסה
+                    </button>
+                    <div v-if="isManager" style="margin-top: 10px; color: #00ff88;">
+                        ✓ מחובר כמנהל
+                    </div>
+                </div>
+                <!-- Manager Panel -->
+                <transition name="fade">
+                    <div v-if="isManager" class="manager-panel">
+                        <h3>פאנל מנהלים</h3>
+                        <div class="form-actions">
+                            <button 
+                                class="btn btn-primary" 
+                                @click="loadAllRequests"
+                                :disabled="loading"
+                            >
+                                צפייה בכל הבקשות
+                            </button>
+                            <button 
+                                class="btn" 
+                                @click="exportAllRequests"
+                                :disabled="loading"
+                            >
+                                ייצוא לגוגל שיטס
+                            </button>
+                            <button 
+                                class="btn btn-danger" 
+                                @click="clearAllData"
+                                :disabled="loading"
+                            >
+                                איפוס כל הנתונים
+                            </button>
+                        </div>
+                        
+                        <div v-if="showRequests" class="requests-list">
+                            <h4>בקשות עובדים לשבוע הרלוונטי:</h4>
+                            <div v-if="Object.keys(allRequests).length === 0" class="empty-state">
+                                אין בקשות עובדים עדיין
+                            </div>
+                            <div v-else>
+                                <div 
+                                    v-for="(requests, employee) in allRequests" 
+                                    :key="employee"
+                                    class="request-item"
+                                >
+                                    <div class="request-employee">
+                                        {{ employee }} ({{ requests.length }}/3 בקשות)
+                                    </div>
+                                    <div class="request-shifts">
+                                        <span v-if="requests.length === 0" class="available-badge">
+                                            זמין לכל המשמרות
+                                        </span>
+                                        <span 
+                                            v-for="shift in requests" 
+                                            :key="shift"
+                                            class="request-shift"
+                                        >
+                                            {{ formatShiftForDisplay(shift) }}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </transition>
             </div>
         </div>
     </div>
@@ -1174,658 +588,263 @@
         createApp({
             data() {
                 return {
-                    activeTab: 'schedule', // Start with schedule tab
-                    loading: false,
-                    
-                    // Employee data with all preferences - YOU MANAGE THIS
+                    // Employee data
                     employees: [
-                        { name: 'אבי שמש', teamRestriction: 'team1', NoOfShifts: 4, dayOrNight: 'both', priority: 'high' },
-                        { name: 'טלי ברון', teamRestriction: 'team2', NoOfShifts: 3, dayOrNight: 'day', priority: 'medium' },
-                        { name: 'נתן גולד', teamRestriction: 'both', NoOfShifts: 4, dayOrNight: 'night', priority: 'medium' },
-                        { name: 'מיכל ברק', teamRestriction: 'team1', NoOfShifts: 3, dayOrNight: 'both', priority: 'low' },
-                        { name: 'רון שחר', teamRestriction: 'team2', NoOfShifts: 4, dayOrNight: 'day', priority: 'high' },
-                        { name: 'תמר נוי', teamRestriction: 'both', NoOfShifts: 3, dayOrNight: 'both', priority: 'medium' },
-                        { name: 'אורי כספי', teamRestriction: 'team1', NoOfShifts: 4, dayOrNight: 'night', priority: 'medium' },
-                        { name: 'יעל שטרן', teamRestriction: 'team2', NoOfShifts: 3, dayOrNight: 'both', priority: 'high' },
-                        { name: 'גיל אורן', teamRestriction: 'both', NoOfShifts: 4, dayOrNight: 'day', priority: 'low' },
-                        { name: 'נועה כחול', teamRestriction: 'team1', NoOfShifts: 3, dayOrNight: 'night', priority: 'medium' },
-                        { name: 'דוד מור', teamRestriction: 'team2', NoOfShifts: 4, dayOrNight: 'both', priority: 'high' },
-                        { name: 'לאה כץ', teamRestriction: 'both', NoOfShifts: 3, dayOrNight: 'day', priority: 'medium' },
-                        { name: 'עמי רון', teamRestriction: 'team1', NoOfShifts: 4, dayOrNight: 'both', priority: 'low' },
-                        { name: 'שירה גל', teamRestriction: 'team2', NoOfShifts: 3, dayOrNight: 'night', priority: 'medium' }
+                        'יוסי כהן', 'רחל לוי', 'משה אברהם', 'שרה דוד', 
+                        'דני מלכה', 'מירי רוזן', 'אבי שמש', 'טלי ברון',
+                        'נתן גולד', 'מיכל ברק', 'רון שחר', 'תמר נוי'
                     ],
+                    shifts: [
+                      '1', '2', 'צו פתוח'
+                    ]
+                    // Hebrew days
+                    shortHebrewDays: ['א\'', 'ב\'', 'ג\'', 'ד\'', 'ה\'', 'ו\'', 'ש\''],
                     
-                    hebrewDays: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'],
+                    // Current state
+                    selectedEmployee: '',
+                    selectedShifts: [],
+                    currentDeadlineWeek: [],
                     
-                    // Employee settings
-                    employeeSettings: {},
+                    // Manager
+                    managerPasswordInput: '',
+                    managerPassword: 'manager123', // Change this
+                    isManager: false,
+                    showRequests: false,
+                    allRequests: {},
                     
-                    // Work pattern constraints - flexible patterns allowed
-                    workPatternRules: {
-                        maxShiftsPerWeek: 3, // Maximum total shifts per employee per week
-                        noConsecutiveDayNight: true, // Cannot work day shift followed by night shift (same day or next day)
-                        minRestHoursBetweenShifts: 12, // Minimum hours between shifts
-                        allowMixedPatterns: true, // Allow combination of day and night shifts
-                        onlyScheduleRequestedEmployees: true // Only schedule employees who submitted requests
-                    },
-                        team1: {
-                            day: { managers: 2, workers: 4 },
-                            night: { managers: 1, workers: 3 }
-                        },
-                        team2: {
-                            day: { managers: 1, workers: 3 },
-                            night: { managers: 1, workers: 3 }
-                        }
-                    },
-                    
-                    // Schedule data
-                    generatedSchedule: {},
-                    workerAssignments: {}, // New: simplified worker assignments
-                    validationLog: [],
-                    currentWeekDates: [],
-                    
-                    // Employee restrictions from previous system
-                    employeeRestrictions: {}
+                    // UI state
+                    loading: false,
+                    deadlineInfo: ''
                 }
             },
             
             computed: {
-                totalManagers() {
-                    return 0; // No managers in system
+                availableShifts() {
+                    return this.currentDeadlineWeek.flatMap((date, dayIndex) => {
+                        const hebrewDay = this.shortHebrewDays[dayIndex];
+                        const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
+                        
+                        return [
+                            {
+                                id: `${dayIndex}-day`,
+                                dateStr,
+                                type: 'יום',
+                                dayIndex,
+                                shiftType: 'day'
+                            },
+                            {
+                                id: `${dayIndex}-night`,
+                                dateStr,
+                                type: 'לילה',
+                                dayIndex,
+                                shiftType: 'night'
+                            }
+                        ];
+                    });
                 },
                 
-                totalWorkers() {
-                    return this.employees.length; // All employees are workers
-                },
-                
-                team1Available() {
-                    return this.employees.filter(emp => 
-                        emp.teamRestriction === 'team1' || emp.teamRestriction === 'both'
-                    ).length;
-                },
-                
-                team2Available() {
-                    return this.employees.filter(emp => 
-                        emp.teamRestriction === 'team2' || emp.teamRestriction === 'both'
-                    ).length;
-                },
-                
-                totalRestrictions() {
-                    return Object.values(this.employeeRestrictions).reduce((sum, restrictions) => sum + restrictions.length, 0);
-                },
-                
-                scheduleComplexity() {
-                    const totalPositions = 7 * (6 + 4 + 4 + 4); // 7 days * (team1 day + team1 night + team2 day + team2 night)
-                    const availablePool = this.employees.length * 7; // Total possible assignments
-                    return Math.round((totalPositions / availablePool) * 100);
-                },
-                
-                hasGeneratedSchedule() {
-                    return Object.keys(this.generatedSchedule).length > 0;
-                },
-                
-                analysisData() {
-                    if (!this.hasGeneratedSchedule) return { coveragePercent: 0, violations: 0, issues: [] };
-                    
-                    return this.analyzeSchedule();
+                weekKey() {
+                    if (!this.currentDeadlineWeek || this.currentDeadlineWeek.length === 0) return 'current';
+                    const firstDate = this.currentDeadlineWeek[0];
+                    return `${firstDate.getFullYear()}-${firstDate.getMonth()}-${firstDate.getDate()}`;
                 }
             },
             
             mounted() {
-                this.initializeEmployeeSettings();
-                this.loadEmployeeRestrictions();
-                this.loadSettings();
-                this.currentWeekDates = this.getNextWeekDates();
+                this.updateDeadlineInfo();
+                setInterval(this.updateDeadlineInfo, 60000); // Update every minute
             },
             
             methods: {
-                initializeEmployeeSettings() {
-                    this.employees.forEach((employee) => {
-                        // Use employee data directly - no user configuration needed
-                        this.employeeSettings[employee.name] = {
-                            allowedTeams: employee.teamRestriction,
-                            priority: employee.priority,
-                            maxShifts: employee.NoOfShifts,
-                            preferredShift: employee.dayOrNight, // 'day', 'night', or 'both'
-                            workPattern: this.getWorkPatternFromPreference(employee.dayOrNight)
-                        };
-                    });
-                },
-                
-                getWorkPatternFromPreference(dayOrNight) {
-                    switch(dayOrNight) {
-                        case 'day': return 'day_only';
-                        case 'night': return 'night_only';
-                        case 'both': return 'flexible';
-                        default: return 'flexible';
+                // Employee methods
+                loadEmployeeData() {
+                    if (!this.selectedEmployee) {
+                        this.selectedShifts = [];
+                        return;
                     }
-                },
-                
-                loadEmployeeRestrictions() {
-                    const weekKey = this.getWeekKey();
+                    
                     const savedData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-                    this.employeeRestrictions = savedData[weekKey] || {};
+                    const weekData = savedData[this.weekKey] || {};
+                    this.selectedShifts = weekData[this.selectedEmployee] || [];
                 },
                 
-                loadSettings() {
-                    const savedEmployeeSettings = localStorage.getItem('teamEmployeeSettings');
-                    if (savedEmployeeSettings) {
-                        const saved = JSON.parse(savedEmployeeSettings);
-                        // Merge with current structure, preserving embedded data
-                        this.employees.forEach(employee => {
-                            if (saved[employee.name]) {
-                                this.employeeSettings[employee.name] = {
-                                    ...this.employeeSettings[employee.name],
-                                    ...saved[employee.name]
-                                };
-                            }
-                        });
+                toggleShift(shiftId) {
+                    const index = this.selectedShifts.indexOf(shiftId);
+                    
+                    if (index > -1) {
+                        // Remove selection
+                        this.selectedShifts.splice(index, 1);
+                    } else {
+                        // Add selection if under limit
+                        if (this.selectedShifts.length < 3) {
+                            this.selectedShifts.push(shiftId);
+                        }
                     }
                 },
                 
-                saveEmployeeSettings() {
-                    localStorage.setItem('teamEmployeeSettings', JSON.stringify(this.employeeSettings));
-                    alert('הגדרות העובדים נשמרו בהצלחה!');
-                },
-                
-                resetEmployeeSettings() {
-                    if (confirm('האם אתם בטוחים שאתם רוצים לאפס את הגדרות העובדים?')) {
-                        this.initializeEmployeeSettings();
-                        this.saveEmployeeSettings();
+                async submitRequest() {
+                    if (!this.selectedEmployee) {
+                        alert('אנא בחרו שם עובד קודם');
+                        return;
                     }
-                },
-                
-                async generateTeamSchedule() {
+                    
                     this.loading = true;
-                    this.validationLog = [];
-                    this.generatedSchedule = {};
                     
                     try {
-                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        // Simulate async operation
+                        await new Promise(resolve => setTimeout(resolve, 1000));
                         
-                        this.addLog('info', '🚀 מתחיל יצירת לוח משמרות לשני הצוותים...');
-                        this.addLog('info', `📊 זוהו ${this.totalManagers} מנהלים ו-${this.totalWorkers} עובדים`);
-                        this.addLog('info', `⚠️ נטענו ${this.totalRestrictions} בקשות אי-זמינות`);
-                        
-                        // Initialize schedule structure
-                        const schedule = {
-                            team1: {},
-                            team2: {}
-                        };
-                        
-                        // Initialize each day for both teams
-                        for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                            schedule.team1[dayIndex] = {
-                                day: { managers: [], workers: [] },
-                                night: { managers: [], workers: [] }
-                            };
-                            schedule.team2[dayIndex] = {
-                                day: { managers: [], workers: [] },
-                                night: { managers: [], workers: [] }
-                            };
-                        }
-                        
-                        this.addLog('info', '🔍 מחשב זמינות רק לעובדים שמילאו בקשה...');
-                        
-                        // Step 1: Filter only employees who submitted requests
-                        const activeEmployees = this.getActiveEmployees();
-                        this.addLog('info', `👥 נמצאו ${activeEmployees.length} עובדים שמילאו בקשה מתוך ${this.employees.length} סה"כ`);
-                        
-                        if (activeEmployees.length === 0) {
-                            this.addLog('error', '❌ אין עובדים שמילאו בקשה השבוע!');
-                            throw new Error('אין עובדים זמינים לשיבוץ');
-                        }
-                        
-                        // Step 2: Calculate flexible availability with mixed patterns
-                        const availability = this.calculateFlexibleAvailability(activeEmployees);
-                        
-                        this.addLog('info', '🧠 מפעיל אלגוריתם הקצאה גמיש עם מניעת משמרות ברצף...');
-                        
-                        // Step 3: Advanced flexible team scheduling
-                        const employeeWorkCount = {};
-                        const employeeShiftTypes = {}; // Track what types of shifts each employee has
-                        
-                        activeEmployees.forEach(emp => {
-                            employeeWorkCount[emp.name] = 0;
-                            employeeShiftTypes[emp.name] = { day: 0, night: 0 };
-                        });
-                        
-                        // Priority order for assignment
-                        const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
-                        
-                        // Step 4: Smart assignment with flexible patterns
-                        for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                            const dayName = this.hebrewDays[dayIndex];
-                            this.addLog('info', `📅 מעבד יום ${dayName}...`);
-                            
-                            // Process both teams for this day
-                            ['team1', 'team2'].forEach(teamId => {
-                                ['day', 'night'].forEach(shiftType => {
-                                    const requirements = this.teamRequirements[teamId][shiftType];
-                                    const availableEmployees = availability[teamId][dayIndex][shiftType];
-                                    
-                                    // Separate managers and workers
-                                    const availableManagers = availableEmployees.filter(emp => emp.role === 'manager');
-                                    const availableWorkers = availableEmployees.filter(emp => emp.role === 'worker');
-                                    
-                                    // Smart sorting with flexible pattern consideration
-                                    const flexibleSort = (a, b) => {
-                                        const scoreA = priorityOrder[a.priority] - employeeWorkCount[a.name];
-                                        const scoreB = priorityOrder[b.priority] - employeeWorkCount[b.name];
-                                        
-                                        // Bonus for pattern preference
-                                        const patternBonusA = this.getPatternBonus(a.name, shiftType, employeeShiftTypes[a.name]);
-                                        const patternBonusB = this.getPatternBonus(b.name, shiftType, employeeShiftTypes[b.name]);
-                                        
-                                        return (scoreB + patternBonusB) - (scoreA + patternBonusA);
-                                    };
-                                    
-                                    availableManagers.sort(flexibleSort);
-                                    availableWorkers.sort(flexibleSort);
-                                    
-                                    // Assign managers with flexible rules
-                                    let assignedManagers = 0;
-                                    for (let manager of availableManagers) {
-                                        if (assignedManagers < requirements.managers && 
-                                            employeeWorkCount[manager.name] < manager.maxShifts &&
-                                            this.canAssignFlexibleShift(manager.name, dayIndex, shiftType, schedule, employeeShiftTypes)) {
-                                            
-                                            schedule[teamId][dayIndex][shiftType].managers.push(manager.name);
-                                            employeeWorkCount[manager.name]++;
-                                            employeeShiftTypes[manager.name][shiftType]++;
-                                            assignedManagers++;
-                                            
-                                            this.addLog('success', `✅ ${manager.name} (מנהל) הוקצה ל${teamId.toUpperCase()} ${shiftType === 'day' ? 'יום' : 'לילה'}`);
-                                        }
-                                    }
-                                    
-                                    // Assign workers with flexible rules
-                                    let assignedWorkers = 0;
-                                    for (let worker of availableWorkers) {
-                                        if (assignedWorkers < requirements.workers && 
-                                            employeeWorkCount[worker.name] < worker.maxShifts &&
-                                            this.canAssignFlexibleShift(worker.name, dayIndex, shiftType, schedule, employeeShiftTypes)) {
-                                            
-                                            schedule[teamId][dayIndex][shiftType].workers.push(worker.name);
-                                            employeeWorkCount[worker.name]++;
-                                            employeeShiftTypes[worker.name][shiftType]++;
-                                            assignedWorkers++;
-                                            
-                                            this.addLog('success', `✅ ${worker.name} (עובד) הוקצה ל${teamId.toUpperCase()} ${shiftType === 'day' ? 'יום' : 'לילה'}`);
-                                        }
-                                    }
-                                    
-                                    // Log assignment results
-                                    if (assignedManagers < requirements.managers) {
-                                        this.addLog('warning', `⚠️ ${teamId.toUpperCase()} ${dayName} ${shiftType === 'day' ? 'יום' : 'לילה'}: חסרים ${requirements.managers - assignedManagers} מנהלים`);
-                                    }
-                                    if (assignedWorkers < requirements.workers) {
-                                        this.addLog('warning', `⚠️ ${teamId.toUpperCase()} ${dayName} ${shiftType === 'day' ? 'יום' : 'לילה'}: חסרים ${requirements.workers - assignedWorkers} עובדים`);
-                                    }
-                                });
-                            });
-                        }
-                        
-                        // Step 5: Log final shift distribution
-                        this.addLog('info', '📊 סיכום הקצאות:');
-                        Object.keys(employeeShiftTypes).forEach(employeeName => {
-                            const shifts = employeeShiftTypes[employeeName];
-                            const total = shifts.day + shifts.night;
-                            if (total > 0) {
-                                this.addLog('info', `👤 ${employeeName}: ${shifts.day} יום + ${shifts.night} לילה = ${total} משמרות`);
+                        if (this.selectedShifts.length === 0) {
+                            const confirmed = confirm('לא בחרתם משמרות לא זמינות. האם אתם זמינים לכל המשמרות?');
+                            if (!confirmed) {
+                                this.loading = false;
+                                return;
                             }
-                        });
+                        }
                         
-                        // Apply workload balancing
-                        this.addLog('info', '⚖️ מאזן עומסי עבודה...');
-                        this.balanceFlexibleWorkload(schedule, employeeWorkCount, employeeShiftTypes);
+                        this.saveEmployeeRequest();
                         
-                        // Final validation
-                        this.addLog('info', '🔍 מבצע בדיקת תקינות סופית...');
-                        this.validateTeamSchedule(schedule);
+                        const message = this.selectedShifts.length === 0 
+                            ? 'הבקשה נשלחה בהצלחה! אתם זמינים לכל המשמרות.'
+                            : `הבקשה נשלחה בהצלחה! בחרתם ${this.selectedShifts.length} משמרות שאתם לא זמינים אליהן.`;
                         
-                        this.generatedSchedule = schedule;
-                        this.addLog('success', `🎉 לוח משמרות הושלם בהצלחה!`);
-                        
-                    } catch (error) {
-                        console.error('Error generating team schedule:', error);
-                        this.addLog('error', '❌ שגיאה ביצירת לוח המשמרות');
-                        alert('שגיאה ביצירת לוח המשמרות');
+                        alert(message);
                     } finally {
                         this.loading = false;
                     }
                 },
                 
-                calculateTeamAvailability() {
-                    const availability = {
-                        team1: {},
-                        team2: {}
-                    };
+                saveEmployeeRequest() {
+                    const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
                     
-                    // Initialize availability structure
-                    for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                        availability.team1[dayIndex] = { day: [], night: [] };
-                        availability.team2[dayIndex] = { day: [], night: [] };
+                    if (!allRequests[this.weekKey]) {
+                        allRequests[this.weekKey] = {};
                     }
                     
-                    // Calculate for each employee
-                    this.employees.forEach(employee => {
-                        const settings = this.employeeSettings[employee];
-                        const restrictions = this.employeeRestrictions[employee] || [];
-                        
-                        for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                            const dayRestriction = `${dayIndex}-day`;
-                            const nightRestriction = `${dayIndex}-night`;
-                            
-                            // Check day shift availability
-                            if (!restrictions.includes(dayRestriction) && 
-                                (settings.preferredShift === 'any' || settings.preferredShift === 'day')) {
-                                
-                                if (settings.allowedTeams === 'team1' || settings.allowedTeams === 'both') {
-                                    availability.team1[dayIndex].day.push({
-                                        name: employee,
-                                        role: settings.role,
-                                        priority: settings.priority,
-                                        maxShifts: settings.maxShifts
-                                    });
-                                }
-                                
-                                if (settings.allowedTeams === 'team2' || settings.allowedTeams === 'both') {
-                                    availability.team2[dayIndex].day.push({
-                                        name: employee,
-                                        role: settings.role,
-                                        priority: settings.priority,
-                                        maxShifts: settings.maxShifts
-                                    });
-                                }
-                            }
-                            
-                            // Check night shift availability
-                            if (!restrictions.includes(nightRestriction) && 
-                                (settings.preferredShift === 'any' || settings.preferredShift === 'night')) {
-                                
-                                if (settings.allowedTeams === 'team1' || settings.allowedTeams === 'both') {
-                                    availability.team1[dayIndex].night.push({
-                                        name: employee,
-                                        role: settings.role,
-                                        priority: settings.priority,
-                                        maxShifts: settings.maxShifts
-                                    });
-                                }
-                                
-                                if (settings.allowedTeams === 'team2' || settings.allowedTeams === 'both') {
-                                    availability.team2[dayIndex].night.push({
-                                        name: employee,
-                                        role: settings.role,
-                                        priority: settings.priority,
-                                        maxShifts: settings.maxShifts
-                                    });
-                                }
-                            }
-                        }
-                    });
-                    
-                    return availability;
+                    allRequests[this.weekKey][this.selectedEmployee] = [...this.selectedShifts];
+                    localStorage.setItem('employeeRequests', JSON.stringify(allRequests));
                 },
                 
-                balanceFlexibleWorkload(schedule, employeeWorkCount, employeeShiftTypes) {
-                    // Enhanced workload balancing for flexible patterns
-                    const maxIterations = 10;
-                    let iteration = 0;
+                clearSelections() {
+                    if (confirm('האם אתם בטוחים שאתם רוצים לאפס את הבחירות?')) {
+                        this.selectedShifts = [];
+                    }
+                },
+                
+                // Manager methods
+                checkManagerAccess() {
+                    if (this.managerPasswordInput === this.managerPassword) {
+                        this.isManager = true;
+                        alert('התחברת בהצלחה כמנהל!');
+                    } else if (this.managerPasswordInput) {
+                        alert('סיסמה שגויה');
+                        this.managerPasswordInput = '';
+                    }
+                },
+                
+                loadAllRequests() {
+                    const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+                    this.allRequests = allRequests[this.weekKey] || {};
+                    this.showRequests = true;
+                },
+                
+                async exportAllRequests() {
+                    if (!this.isManager) return;
                     
-                    while (iteration < maxIterations) {
-                        let swapMade = false;
+                    this.loading = true;
+                    
+                    try {
+                        const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+                        const weekRequests = allRequests[this.weekKey] || {};
                         
-                        // Find workload imbalances
-                        const workloadIssues = [];
-                        Object.keys(employeeWorkCount).forEach(employee => {
-                            const settings = this.employeeSettings[employee];
-                            const currentLoad = employeeWorkCount[employee];
-                            
-                            if (currentLoad > settings.maxShifts * 0.9) {
-                                workloadIssues.push({ employee, type: 'overworked', load: currentLoad });
-                            } else if (currentLoad < settings.maxShifts * 0.3 && currentLoad > 0) {
-                                workloadIssues.push({ employee, type: 'underworked', load: currentLoad });
-                            }
+                        let csvContent = 'שם עובד,';
+                        
+                        // Create headers
+                        this.currentDeadlineWeek.forEach((date, index) => {
+                            const hebrewDay = this.shortHebrewDays[index];
+                            const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
+                            csvContent += `${dateStr} יום,${dateStr} לילה,`;
                         });
+                        csvContent = csvContent.slice(0, -1) + '\n';
                         
-                        // Try to balance by swapping assignments
-                        const overworked = workloadIssues.filter(w => w.type === 'overworked');
-                        const underworked = workloadIssues.filter(w => w.type === 'underworked');
-                        
-                        if (overworked.length > 0 && underworked.length > 0) {
-                            for (let over of overworked) {
-                                for (let under of underworked) {
-                                    if (this.attemptFlexibleSwap(schedule, over.employee, under.employee, employeeWorkCount, employeeShiftTypes)) {
-                                        swapMade = true;
-                                        break;
-                                    }
-                                }
-                                if (swapMade) break;
-                            }
-                        }
-                        
-                        if (!swapMade) break;
-                        iteration++;
-                    }
-                    
-                    if (iteration > 0) {
-                        this.addLog('info', `🔄 בוצעו ${iteration} סיבובי איזון עומסי עבודה`);
-                    }
-                },
-                
-                attemptFlexibleSwap(schedule, overworkedEmployee, underworkedEmployee, employeeWorkCount, employeeShiftTypes) {
-                    // Enhanced swap logic for flexible patterns
-                    const overSettings = this.employeeSettings[overworkedEmployee];
-                    const underSettings = this.employeeSettings[underworkedEmployee];
-                    
-                    // Find employees in the employees array
-                    const overEmployee = this.employees.find(e => e.name === overworkedEmployee);
-                    const underEmployee = this.employees.find(e => e.name === underworkedEmployee);
-                    
-                    if (!overEmployee || !underEmployee) {
-                        return false;
-                    }
-                    
-                    // Find a shift to swap
-                    for (let teamId of ['team1', 'team2']) {
-                        for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                            for (let shiftType of ['day', 'night']) {
-                                const shift = schedule[teamId][dayIndex][shiftType];
-                                const workers = shift.workers;
+                        // Add employee data
+                        this.employees.forEach(employee => {
+                            const employeeShifts = weekRequests[employee] || [];
+                            csvContent += `${employee},`;
+                            
+                            this.currentDeadlineWeek.forEach((date, dayIndex) => {
+                                const dayId = `${dayIndex}-day`;
+                                const nightId = `${dayIndex}-night`;
                                 
-                                const overIndex = workers.indexOf(overworkedEmployee);
-                                if (overIndex !== -1) {
-                                    // Check if underworked employee can take this shift
-                                    const underRestrictions = this.employeeRestrictions[underworkedEmployee] || [];
-                                    const shiftId = `${dayIndex}-${shiftType}`;
-                                    
-                                    const canSwap = !underRestrictions.includes(shiftId) &&
-                                                  employeeWorkCount[underworkedEmployee] < underSettings.maxShifts &&
-                                                  (underSettings.allowedTeams === teamId.replace('team', 'team') || underSettings.allowedTeams === 'both') &&
-                                                  this.canAssignFlexibleShift(underworkedEmployee, dayIndex, shiftType, schedule, employeeShiftTypes);
-                                    
-                                    if (canSwap) {
-                                        workers[overIndex] = underworkedEmployee;
-                                        employeeWorkCount[overworkedEmployee]--;
-                                        employeeWorkCount[underworkedEmployee]++;
-                                        employeeShiftTypes[overworkedEmployee][shiftType]--;
-                                        employeeShiftTypes[underworkedEmployee][shiftType]++;
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    return false;
-                },
-                
-                validateTeamSchedule(schedule) {
-                    let totalIssues = 0;
-                    
-                    for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                        const dayName = this.hebrewDays[dayIndex];
-                        
-                        ['team1', 'team2'].forEach(teamId => {
-                            ['day', 'night'].forEach(shiftType => {
-                                const requirements = this.teamRequirements[teamId][shiftType];
-                                const assigned = schedule[teamId][dayIndex][shiftType];
+                                const dayStatus = employeeShifts.includes(dayId) ? 'לא זמין' : 'זמין';
+                                const nightStatus = employeeShifts.includes(nightId) ? 'לא זמין' : 'זמין';
                                 
-                                if (assigned.managers.length < requirements.managers) {
-                                    totalIssues++;
-                                }
-                                if (assigned.workers.length < requirements.workers) {
-                                    totalIssues++;
-                                }
+                                csvContent += `${dayStatus},${nightStatus},`;
                             });
+                            
+                            csvContent = csvContent.slice(0, -1) + '\n';
                         });
+                        
+                        // Copy to clipboard
+                        await navigator.clipboard.writeText(csvContent);
+                        alert('הנתונים הועתקו ללוח! תוכלו כעת להדביק אותם בגוגל שיטס.');
+                    } catch (error) {
+                        console.error('Export error:', error);
+                        alert('שגיאה בייצוא הנתונים');
+                    } finally {
+                        this.loading = false;
                     }
+                },
+                
+                clearAllData() {
+                    if (!this.isManager) return;
                     
-                    if (totalIssues === 0) {
-                        this.addLog('success', '✅ כל הדרישות מתקיימות!');
+                    if (confirm('האם אתם בטוחים שאתם רוצים לאפס את כל הנתונים? פעולה זו בלתי הפיכה!')) {
+                        localStorage.removeItem('employeeRequests');
+                        this.allRequests = {};
+                        this.showRequests = false;
+                        alert('כל הנתונים נמחקו בהצלחה!');
+                    }
+                },
+                
+                // Date utilities
+                updateDeadlineInfo() {
+                    const now = new Date();
+                    const currentDay = now.getDay();
+                    const currentHour = now.getHours();
+                    
+                    // Check if passed deadline (Wednesday 10:00)
+                    const passedDeadline = (currentDay > 3) || (currentDay === 3 && currentHour >= 10);
+                    
+                    let targetWeek;
+                    let deadlineDate;
+                    
+                    if (passedDeadline) {
+                        targetWeek = this.getWeekAfterNext();
+                        deadlineDate = this.getNextWednesday();
                     } else {
-                        this.addLog('warning', `⚠️ נמצאו ${totalIssues} הפרות דרישות`);
-                    }
-                },
-                
-                analyzeSchedule() {
-                    let totalPositions = 0;
-                    let filledPositions = 0;
-                    let managerPositions = 0;
-                    let filledManagerPositions = 0;
-                    let workerPositions = 0;
-                    let filledWorkerPositions = 0;
-                    let violations = 0;
-                    let issues = [];
-                    
-                    for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                        const dayName = this.hebrewDays[dayIndex];
-                        
-                        ['team1', 'team2'].forEach(teamId => {
-                            ['day', 'night'].forEach(shiftType => {
-                                const requirements = this.teamRequirements[teamId][shiftType];
-                                const assigned = this.generatedSchedule[teamId][dayIndex][shiftType];
-                                
-                                // Count positions
-                                managerPositions += requirements.managers;
-                                workerPositions += requirements.workers;
-                                totalPositions += requirements.managers + requirements.workers;
-                                
-                                // Count filled positions
-                                filledManagerPositions += assigned.managers.length;
-                                filledWorkerPositions += assigned.workers.length;
-                                filledPositions += assigned.managers.length + assigned.workers.length;
-                                
-                                // Check violations
-                                if (assigned.managers.length < requirements.managers) {
-                                    violations++;
-                                    issues.push({
-                                        type: 'error',
-                                        message: `${teamId.toUpperCase()} ${dayName} ${shiftType === 'day' ? 'יום' : 'לילה'}: חסרים ${requirements.managers - assigned.managers.length} מנהלים`
-                                    });
-                                }
-                                
-                                if (assigned.workers.length < requirements.workers) {
-                                    violations++;
-                                    issues.push({
-                                        type: 'error',
-                                        message: `${teamId.toUpperCase()} ${dayName} ${shiftType === 'day' ? 'יום' : 'לילה'}: חסרים ${requirements.workers - assigned.workers.length} עובדים`
-                                    });
-                                }
-                            });
-                        });
+                        targetWeek = this.getNextWeekDates();
+                        deadlineDate = this.getThisWednesday();
                     }
                     
-                    return {
-                        coveragePercent: totalPositions > 0 ? Math.round((filledPositions / totalPositions) * 100) : 0,
-                        managerCoverage: managerPositions > 0 ? Math.round((filledManagerPositions / managerPositions) * 100) : 0,
-                        workerCoverage: workerPositions > 0 ? Math.round((filledWorkerPositions / workerPositions) * 100) : 0,
-                        violations,
-                        issues
-                    };
-                },
-                
-                regenerateSchedule() {
-                    if (confirm('האם אתם בטוחים שאתם רוצים ליצור לוח משמרות חדש?')) {
-                        this.generateTeamSchedule();
-                    }
-                },
-                
-                exportSchedule() {
-                    if (!this.hasGeneratedSchedule) {
-                        alert('אין לוח משמרות ליצוא');
-                        return;
+                    this.currentDeadlineWeek = targetWeek;
+                    
+                    // Update deadline info
+                    const timeLeft = deadlineDate.getTime() - now.getTime();
+                    const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                    const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    
+                    if (timeLeft > 0) {
+                        const weekType = passedDeadline ? 'השבוע שאחרי הבא' : 'השבוע הבא';
+                        this.deadlineInfo = `⏰ בקשות עבור ${weekType} | מועד אחרון: ${deadlineDate.toLocaleDateString('he-IL')} בשעה 10:00 (נותרו ${daysLeft} ימים ו-${hoursLeft} שעות)`;
+                    } else {
+                        this.deadlineInfo = `⏰ המועד אחרון עבר - בקשות חדשות הן עבור השבוע שאחרי הבא`;
                     }
                     
-                    let csvContent = 'יום,צוות 1 - מנהלי יום,צוות 1 - עובדי יום,צוות 1 - מנהל לילה,צוות 1 - עובדי לילה,צוות 2 - מנהל יום,צוות 2 - עובדי יום,צוות 2 - מנהל לילה,צוות 2 - עובדי לילה\n';
-                    
-                    for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                        const dayName = this.hebrewDays[dayIndex];
-                        const team1 = this.generatedSchedule.team1[dayIndex];
-                        const team2 = this.generatedSchedule.team2[dayIndex];
-                        
-                        csvContent += `${dayName},`;
-                        csvContent += `"${team1.day.managers.join(', ')}",`;
-                        csvContent += `"${team1.day.workers.join(', ')}",`;
-                        csvContent += `"${team1.night.managers.join(', ')}",`;
-                        csvContent += `"${team1.night.workers.join(', ')}",`;
-                        csvContent += `"${team2.day.managers.join(', ')}",`;
-                        csvContent += `"${team2.day.workers.join(', ')}",`;
-                        csvContent += `"${team2.night.managers.join(', ')}",`;
-                        csvContent += `"${team2.night.workers.join(', ')}"`;
-                        csvContent += '\n';
+                    // Reload employee data if needed
+                    if (this.selectedEmployee) {
+                        this.loadEmployeeData();
                     }
-                    
-                    // Add summary
-                    csvContent += '\n\nסיכום עובדים:\n';
-                    csvContent += 'עובד,תפקיד,מספר משמרות,צוותים\n';
-                    
-                    const employeeSummary = {};
-                    ['team1', 'team2'].forEach(teamId => {
-                        for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                            ['day', 'night'].forEach(shiftType => {
-                                const shift = this.generatedSchedule[teamId][dayIndex][shiftType];
-                                
-                                [...shift.managers, ...shift.workers].forEach(employee => {
-                                    if (!employeeSummary[employee]) {
-                                        employeeSummary[employee] = {
-                                            role: this.employeeSettings[employee].role,
-                                            count: 0,
-                                            teams: new Set()
-                                        };
-                                    }
-                                    employeeSummary[employee].count++;
-                                    employeeSummary[employee].teams.add(teamId);
-                                });
-                            });
-                        }
-                    });
-                    
-                    Object.keys(employeeSummary).forEach(employee => {
-                        const summary = employeeSummary[employee];
-                        csvContent += `${employee},${summary.role === 'manager' ? 'מנהל' : 'עובד'},${summary.count},"${Array.from(summary.teams).join(', ')}"\n`;
-                    });
-                    
-                    navigator.clipboard.writeText(csvContent).then(() => {
-                        alert('לוח המשמרות הועתק ללוח! תוכלו כעת להדביק אותו בגוגל שיטס.');
-                    }).catch(() => {
-                        console.log('Team schedule export data:', csvContent);
-                        alert('לוח המשמרות מוכן לייצוא - בדקו את הקונסול');
-                    });
-                },
-                
-                formatTeamMembers(members) {
-                    if (!members || members.length === 0) return 'לא מוקצה';
-                    return members.join(', ');
-                },
-                
-                addLog(type, message) {
-                    this.validationLog.push({ type, message });
-                },
-                
-                getLogClass(type) {
-                    return `log-${type}`;
                 },
                 
                 getNextWeekDates() {
@@ -1842,10 +861,41 @@
                     return dates;
                 },
                 
-                getWeekKey() {
-                    if (!this.currentWeekDates || this.currentWeekDates.length === 0) return 'current';
-                    const firstDate = this.currentWeekDates[0];
-                    return `${firstDate.getFullYear()}-${firstDate.getMonth()}-${firstDate.getDate()}`;
+                getWeekAfterNext() {
+                    const today = new Date();
+                    const weekAfterNextSunday = new Date(today);
+                    weekAfterNextSunday.setDate(today.getDate() + (14 - today.getDay()));
+                    
+                    const dates = [];
+                    for (let i = 0; i < 7; i++) {
+                        const date = new Date(weekAfterNextSunday);
+                        date.setDate(weekAfterNextSunday.getDate() + i);
+                        dates.push(date);
+                    }
+                    return dates;
+                },
+                
+                getThisWednesday() {
+                    const today = new Date();
+                    const wednesday = new Date(today);
+                    const daysUntilWednesday = (3 - today.getDay() + 7) % 7;
+                    wednesday.setDate(today.getDate() + daysUntilWednesday);
+                    wednesday.setHours(10, 0, 0, 0);
+                    return wednesday;
+                },
+                
+                getNextWednesday() {
+                    const thisWednesday = this.getThisWednesday();
+                    const nextWednesday = new Date(thisWednesday);
+                    nextWednesday.setDate(thisWednesday.getDate() + 7);
+                    return nextWednesday;
+                },
+                
+                formatShiftForDisplay(shiftId) {
+                    const [dayIndex, shiftType] = shiftId.split('-');
+                    const hebrewDay = this.shortHebrewDays[parseInt(dayIndex)];
+                    const shiftTypeHe = shiftType === 'day' ? 'יום' : 'לילה';
+                    return `${hebrewDay} - ${shiftTypeHe}`;
                 }
             }
         }).mount('#app');
