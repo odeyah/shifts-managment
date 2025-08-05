@@ -548,9 +548,9 @@
                         </div>
                         
                         <div v-if="showRequests" class="requests-list">
-                            <h4>בקשות עובדים לשבוע הרלוונטי:</h4>
+                            <h4>בקשות לשבוע הרלוונטי:</h4>
                             <div v-if="Object.keys(allRequests).length === 0" class="empty-state">
-                                אין בקשות עובדים עדיין
+                                אין בקשות עדיין
                             </div>
                             <div v-else>
                                 <div 
@@ -607,7 +607,7 @@
                     
                     // Manager
                     managerPasswordInput: '',
-                    managerPassword: 'manager123', // Change this
+                    managerPassword: 'Aa321321', // Change this
                     isManager: false,
                     showRequests: false,
                     allRequests: {},
@@ -684,7 +684,7 @@
                 
                 async submitRequest() {
                     if (!this.selectedEmployee) {
-                        alert('אנא בחרו שם עובד קודם');
+                        alert('אנא בחרו שם קודם');
                         return;
                     }
                     
@@ -757,7 +757,7 @@
                         const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
                         const weekRequests = allRequests[this.weekKey] || {};
                         
-                        let csvContent = 'שם עובד,';
+                        let csvContent = 'שם,';
                         
                         // Create headers
                         this.currentDeadlineWeek.forEach((date, index) => {
@@ -902,3 +902,4 @@
     </script>
 </body>
 </html>
+
