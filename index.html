@@ -1,346 +1,282 @@
-<script>
-	// Application state
-	const app = {
-		employees: [
-			'יוסי כהן',
-			'רחל לוי',
-			'משה אברהם',
-			'שרה דוד',
-			'דני מלכה',
-			'מירי רוזן',
-			'אבי שמש',
-			'טלי ברון',
-			'נתן גולד',
-			'מיכל ברק',
-			'רון שחר',
-			'תמר נוי',
-		],
-		shortHebrewDays: ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"],
-		selectedEmployee: '',
-		selectedShifts: [],
-		currentDeadlineWeek: [],
-		loading: false,
-	};
-
-	// DOM elements
-	const elements = {
-		employeeSelect: document.getElementById('employeeSelect'),
-		shiftsSelect: document.getElementById('shiftsSelect'),
-		employeeForm: document.getElementById('employeeForm'),
-		employeeName: document.getElementById('employeeName'),
-		shiftsGrid: document.getElementById('shiftsGrid'),
-		counter: document.getElementById('counter'),
-		submitBtn: document.getElementById('submitBtn'),
-		clearBtn: document.getElementById('clearBtn'),
-		deadlineInfo: document.getElementById('deadlineInfo'),
-	};
-
-	// Initialize application
-	function init() {
-		populateEmployeeSelect();
-		updateDeadlineInfo();
-		setInterval(updateDeadlineInfo, 60000); // Update every minute
-		attachEventListeners();
-	}
-
-	// Populate employee dropdown
-	function populateEmployeeSelect() {
-		app.employees.forEach(employee => {
-			const option = document.createElement('option');
-			option.value = employee;
-			option.textContent = employee;
-			elements.employeeSelect.appendChild(option);
-		});
-	}
-
-	// Attach event listeners
-	function attachEventListeners() {
-		elements.employeeSelect.addEventListener('change', handleEmployeeChange);
-		elements.submitBtn.addEventListener('click', submitRequest);
-		elements.clearBtn.addEventListener('click', clearSelections);
-	}
-
-	// Handle employee selection change
-	function handleEmployeeChange() {
-		app.selectedEmployee = elements.employeeSelect.value;
-		elements.employeeName.textContent = app.selectedEmployee;
-
-		if (app.selectedEmployee) {
-			loadEmployeeData();
-			elements.employeeForm.classList.add('show');
-			generateShiftsGrid();
-		} else {
-			elements.employeeForm.classList.remove('show');
-			app.selectedShifts = [];
-		}
-	}
-
-	// Load saved employee data
-	function loadEmployeeData() {
-		try {
-			const savedData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-			const weekKey = getWeekKey();
-			const weekData = savedData[weekKey] || {};
-			app.selectedShifts = weekData[app.selectedEmployee] || [];
-			updateCounter();
-		} catch (error) {
-			console.error('Error loading employee data:', error);
-			app.selectedShifts = [];
-		}
-	}
-
-	// Generate shifts grid
-	function generateShiftsGrid() {
-		elements.shiftsGrid.innerHTML = '';
-
-		app.currentDeadlineWeek.forEach((date, dayIndex) => {
-			const hebrewDay = app.shortHebrewDays[dayIndex];
-			const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
-
-			// Day shift
-			const dayShift = createShiftElement(`${dayIndex}-day`, dateStr, 'יום');
-			elements.shiftsGrid.appendChild(dayShift);
-
-			// Night shift
-			const nightShift = createShiftElement(`${dayIndex}-night`, dateStr, 'לילה');
-			elements.shiftsGrid.appendChild(nightShift);
-		});
-	}
-
-	// Create shift element
-	function createShiftElement(shiftId, dateStr, shiftType) {
-		const shiftDiv = document.createElement('div');
-		shiftDiv.className = 'shift-option';
-		shiftDiv.dataset.shiftId = shiftId;
-
-		const isSelected = app.selectedShifts.includes(shiftId);
-		const isDisabled = app.selectedShifts.length >= 3 && !isSelected;
-
-		if (isSelected) shiftDiv.classList.add('selected');
-		if (isDisabled) shiftDiv.classList.add('disabled');
-
-		shiftDiv.innerHTML = `
-                <div class="shift-date">${dateStr}</div>
-                <div class="shift-time">${shiftType}</div>
-                ${isSelected ? '<div class="unavailable-badge">✗</div>' : ''}
-            `;
-
-		shiftDiv.addEventListener('click', () => toggleShift(shiftId));
-
-		return shiftDiv;
-	}
-
-	// Toggle shift selection
-	function toggleShift(shiftId) {
-		const index = app.selectedShifts.indexOf(shiftId);
-
-		if (index > -1) {
-			// Remove selection
-			app.selectedShifts.splice(index, 1);
-		} else {
-			// Add selection if under limit
-			if (app.selectedShifts.length < 3) {
-				app.selectedShifts.push(shiftId);
-			}
-		}
-
-		generateShiftsGrid();
-		updateCounter();
-	}
-
-	// Update counter
-	function updateCounter() {
-		const count = app.selectedShifts.length;
-		elements.counter.textContent = `משמרות לא זמינות: ${count}/3`;
-
-		elements.counter.className = 'counter';
-		if (count === 2) elements.counter.classList.add('warning');
-		if (count === 3) {
-			elements.counter.classList.add('limit-reached');
-			elements.counter.textContent += ' (הגעתם למגבלה)';
-		}
-	}
-
-	// Submit request
-	async function submitRequest() {
-		if (!app.selectedEmployee) {
-			alert('אנא בחרו שם קודם');
-			return;
-		}
-
-		setLoading(true);
-
-		try {
-			// Simulate async operation
-			await new Promise(resolve => setTimeout(resolve, 1000));
-
-			if (app.selectedShifts.length === 0) {
-				const confirmed = confirm('לא בחרתם משמרות לא זמינות. האם אתם זמינים לכל המשמרות?');
-				if (!confirmed) {
-					setLoading(false);
-					return;
-				}
-			}
-
-			saveEmployeeRequest();
-
-			const message =
-				app.selectedShifts.length === 0
-					? 'הבקשה נשלחה בהצלחה! אתם זמינים לכל המשמרות.'
-					: `הבקשה נשלחה בהצלחה! בחרתם ${app.selectedShifts.length} משמרות שאתם לא זמינים אליהן.`;
-
-			alert(message);
-		} finally {
-			setLoading(false);
-		}
-	}
-
-	// Save employee request
-	function saveEmployeeRequest() {
-		try {
-			const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-			const weekKey = getWeekKey();
-
-			if (!allRequests[weekKey]) {
-				allRequests[weekKey] = {};
-			}
-
-			allRequests[weekKey][app.selectedEmployee] = [...app.selectedShifts];
-			localStorage.setItem('employeeRequests', JSON.stringify(allRequests));
-		} catch (error) {
-			console.error('Error saving employee request:', error);
-			alert('שגיאה בשמירת הבקשה');
-		}
-	}
-
-	// Clear selections
-	function clearSelections() {
-		if (confirm('האם אתם בטוחים שאתם רוצים לאפס את הבחירות?')) {
-			app.selectedShifts = [];
-			generateShiftsGrid();
-			updateCounter();
-		}
-	}
-
-	// Set loading state
-	function setLoading(loading) {
-		app.loading = loading;
-		elements.submitBtn.disabled = loading;
-		elements.clearBtn.disabled = loading || app.selectedShifts.length === 0;
-
-		if (loading) {
-			elements.submitBtn.innerHTML = '<span class="loading"></span> שולח...';
-		} else {
-			elements.submitBtn.innerHTML = 'שליחת בקשה';
-		}
-	}
-
-	// Date utilities
-	function updateDeadlineInfo() {
-		try {
-			const now = new Date();
-			const currentDay = now.getDay();
-			const currentHour = now.getHours();
-
-			// Check if passed deadline (Wednesday 10:00)
-			const passedDeadline = currentDay > 3 || (currentDay === 3 && currentHour >= 10);
-
-			let targetWeek;
-			let deadlineDate;
-
-			if (passedDeadline) {
-				targetWeek = getWeekAfterNext();
-				deadlineDate = getNextWednesday();
-			} else {
-				targetWeek = getNextWeekDates();
-				deadlineDate = getThisWednesday();
-			}
-
-			app.currentDeadlineWeek = targetWeek;
-
-			// Update deadline info
-			const timeLeft = deadlineDate.getTime() - now.getTime();
-			const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-			const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-			if (timeLeft > 0) {
-				const weekType = passedDeadline ? 'השבוע שאחרי הבא' : 'השבוע הבא';
-				elements.deadlineInfo.textContent = `⏰ בקשות עבור ${weekType} | מועד אחרון: ${deadlineDate.toLocaleDateString(
-					'he-IL',
-				)} בשעה 10:00 (נותרו ${daysLeft} ימים ו-${hoursLeft} שעות)`;
-			} else {
-				elements.deadlineInfo.textContent = `⏰ המועד אחרון עבר - בקשות חדשות הן עבור השבוע שאחרי הבא`;
-			}
-
-			// Regenerate shifts if employee selected
-			if (app.selectedEmployee) {
-				generateShiftsGrid();
-			}
-		} catch (error) {
-			console.error('Error updating deadline info:', error);
-			elements.deadlineInfo.textContent = 'טוען מידע על מועדים...';
-		}
-	}
-
-	function getNextWeekDates() {
-		const today = new Date();
-		const nextSunday = new Date(today);
-		nextSunday.setDate(today.getDate() + (7 - today.getDay()));
-
-		const dates = [];
-		for (let i = 0; i < 7; i++) {
-			const date = new Date(nextSunday);
-			date.setDate(nextSunday.getDate() + i);
-			dates.push(date);
-		}
-		return dates;
-	}
-
-	function getWeekAfterNext() {
-		const today = new Date();
-		const weekAfterNextSunday = new Date(today);
-		weekAfterNextSunday.setDate(today.getDate() + (14 - today.getDay()));
-
-		const dates = [];
-		for (let i = 0; i < 7; i++) {
-			const date = new Date(weekAfterNextSunday);
-			date.setDate(weekAfterNextSunday.getDate() + i);
-			dates.push(date);
-		}
-		return dates;
-	}
-
-	function getThisWednesday() {
-		const today = new Date();
-		const wednesday = new Date(today);
-		const daysUntilWednesday = (3 - today.getDay() + 7) % 7;
-		wednesday.setDate(today.getDate() + daysUntilWednesday);
-		wednesday.setHours(10, 0, 0, 0);
-		return wednesday;
-	}
-
-	function getNextWednesday() {
-		const thisWednesday = getThisWednesday();
-		const nextWednesday = new Date(thisWednesday);
-		nextWednesday.setDate(thisWednesday.getDate() + 7);
-		return nextWednesday;
-	}
-
-	function getWeekKey() {
-		if (!app.currentDeadlineWeek || app.currentDeadlineWeek.length === 0) return 'current';
-		const firstDate = app.currentDeadlineWeek[0];
-		return `${firstDate.getFullYear()}-${firstDate.getMonth()}-${firstDate.getDate()}`;
-	}
-
-	// Initialize when DOM is loaded
-	document.addEventListener('DOMContentLoaded', init);
-</script>
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>מערכת בקשות משמרות</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			body {
+				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				min-height: 100vh;
+				padding: 20px;
+				direction: rtl;
+			}
+
+			.container {
+				max-width: 800px;
+				margin: 0 auto;
+				background: white;
+				border-radius: 15px;
+				box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+				overflow: hidden;
+			}
+
+			.header {
+				background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+				color: white;
+				padding: 30px;
+				text-align: center;
+			}
+
+			.header h1 {
+				font-size: 2.5rem;
+				margin-bottom: 10px;
+				font-weight: 300;
+			}
+
+			.header p {
+				font-size: 1.1rem;
+				opacity: 0.9;
+			}
+
+			.content {
+				padding: 30px;
+			}
+
+			.employee-selector {
+				background: #f8f9fa;
+				border-radius: 12px;
+				padding: 25px;
+				margin-bottom: 25px;
+				text-align: center;
+			}
+
+			.employee-selector h3 {
+				margin-bottom: 20px;
+				color: #2c3e50;
+				font-size: 1.3rem;
+			}
+
+			.employee-dropdown {
+				width: 100%;
+				max-width: 300px;
+				padding: 15px;
+				border: 2px solid #e9ecef;
+				border-radius: 10px;
+				font-size: 1.1rem;
+				background: white;
+				margin-bottom: 20px;
+				transition: all 0.3s ease;
+			}
+
+			.employee-dropdown:focus {
+				outline: none;
+				border-color: #4facfe;
+				box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+			}
+
+			.btn {
+				background: linear-gradient(135deg, #00b894, #00a085);
+				color: white;
+				border: none;
+				padding: 15px 30px;
+				border-radius: 10px;
+				font-size: 1.1rem;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				margin: 10px;
+			}
+
+			.btn:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 10px 20px rgba(0, 184, 148, 0.3);
+			}
+
+			.btn:disabled {
+				opacity: 0.6;
+				cursor: not-allowed;
+				transform: none;
+			}
+
+			.btn-danger {
+				background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+			}
+
+			.btn-success {
+				background: linear-gradient(135deg, #00b894, #00a085);
+			}
+
+			.employee-form {
+				background: #f8f9fa;
+				border-radius: 12px;
+				padding: 25px;
+				margin-bottom: 25px;
+				display: none;
+				opacity: 0;
+				transform: translateY(20px);
+				transition: all 0.5s ease;
+			}
+
+			.employee-form.show {
+				display: block;
+				opacity: 1;
+				transform: translateY(0);
+			}
+
+			.form-title {
+				font-size: 1.4rem;
+				font-weight: 600;
+				color: #2c3e50;
+				margin-bottom: 20px;
+				text-align: center;
+			}
+
+			.deadline-info {
+				background: linear-gradient(135deg, #74b9ff, #0984e3);
+				color: white;
+				padding: 15px;
+				border-radius: 10px;
+				margin-bottom: 20px;
+				text-align: center;
+				font-size: 0.9rem;
+			}
+
+			.shifts-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+				gap: 15px;
+				margin-bottom: 20px;
+			}
+
+			.shift-option {
+				background: white;
+				border: 2px solid #e9ecef;
+				border-radius: 10px;
+				padding: 15px;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				text-align: center;
+				position: relative;
+				user-select: none;
+			}
+
+			.shift-option:hover:not(.disabled) {
+				border-color: #4facfe;
+				transform: translateY(-2px);
+			}
+
+			.shift-option.selected {
+				background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+				color: white;
+				border-color: #ff6b6b;
+				transform: scale(1.02);
+			}
+
+			.shift-option.disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+				background: #f8f9fa;
+			}
+
+			.shift-date {
+				font-weight: 600;
+				font-size: 0.9rem;
+				margin-bottom: 5px;
+				color: #6c757d;
+			}
+
+			.shift-option.selected .shift-date {
+				color: white;
+			}
+
+			.shift-time {
+				font-size: 1.1rem;
+				font-weight: 500;
+			}
+
+			.unavailable-badge {
+				position: absolute;
+				top: -5px;
+				left: -5px;
+				background: #ff6b6b;
+				color: white;
+				border-radius: 50%;
+				width: 20px;
+				height: 20px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 12px;
+				font-weight: bold;
+			}
+
+			.counter {
+				text-align: center;
+				font-size: 1rem;
+				color: #6c757d;
+				margin: 20px 0;
+				padding: 15px;
+				background: #e9ecef;
+				border-radius: 8px;
+				transition: all 0.3s ease;
+			}
+
+			.counter.warning {
+				background: #fff3cd;
+				color: #856404;
+				border: 1px solid #ffeaa7;
+			}
+
+			.counter.limit-reached {
+				background: #f8d7da;
+				color: #721c24;
+				border: 1px solid #f5c6cb;
+			}
+
+			.alert {
+				padding: 15px;
+				border-radius: 10px;
+				margin: 15px 0;
+			}
+
+			.alert-info {
+				background: #cce7ff;
+				color: #004085;
+				border: 1px solid #99d6ff;
+			}
+
+			.form-actions {
+				text-align: center;
+				margin-top: 30px;
+			}
+
+			.loading {
+				display: inline-block;
+				width: 20px;
+				height: 20px;
+				border: 3px solid #f3f3f3;
+				border-top: 3px solid #4facfe;
+				border-radius: 50%;
+				animation: spin 1s linear infinite;
+			}
+
+			@keyframes spin {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
+			}
+		</style>
 	</head>
 	<body>
 		<div class="container">
@@ -355,6 +291,18 @@
 					<h3>בחרו את השם שלכם:</h3>
 					<select id="employeeSelect" class="employee-dropdown">
 						<option value="">-- בחרו שם --</option>
+						<option value="יוסי כהן">יוסי כהן</option>
+						<option value="רחל לוי">רחל לוי</option>
+						<option value="משה אברהם">משה אברהם</option>
+						<option value="שרה דוד">שרה דוד</option>
+						<option value="דני מלכה">דני מלכה</option>
+						<option value="מירי רוזן">מירי רוזן</option>
+						<option value="אבי שמש">אבי שמש</option>
+						<option value="טלי ברון">טלי ברון</option>
+						<option value="נתן גולד">נתן גולד</option>
+						<option value="מיכל ברק">מיכל ברק</option>
+						<option value="רון שחר">רון שחר</option>
+						<option value="תמר נוי">תמר נוי</option>
 					</select>
 					<select id="shiftsSelect" class="employee-dropdown">
 						<option value="">-- בחרו כמות משמרות --</option>
@@ -369,7 +317,7 @@
 
 				<!-- Employee Form -->
 				<div id="employeeForm" class="employee-form">
-					<div class="form-title"><span id="employeeName">שם עובד</span> - בחירת משמרות</div>
+					<div class="form-title">👤 <span id="employeeName">שם עובד</span> - בחירת משמרות</div>
 
 					<div class="alert alert-info">
 						<strong>הוראות:</strong> בחרו עד 3 משמרות שאתם <strong>לא יכולים</strong> לעבוד בשבוע הרלוונטי
@@ -388,290 +336,308 @@
 				</div>
 			</div>
 		</div>
+
+		<script>
+			// Application state
+			let selectedEmployee = '';
+			let selectedShifts = [];
+			let currentDeadlineWeek = [];
+			let loading = false;
+
+			const shortHebrewDays = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"];
+
+			// DOM elements
+			const employeeSelect = document.getElementById('employeeSelect');
+			const employeeForm = document.getElementById('employeeForm');
+			const employeeName = document.getElementById('employeeName');
+			const shiftsGrid = document.getElementById('shiftsGrid');
+			const counter = document.getElementById('counter');
+			const submitBtn = document.getElementById('submitBtn');
+			const clearBtn = document.getElementById('clearBtn');
+			const deadlineInfo = document.getElementById('deadlineInfo');
+
+			// Initialize application
+			function init() {
+				updateDeadlineInfo();
+				setInterval(updateDeadlineInfo, 60000);
+				attachEventListeners();
+			}
+
+			// Attach event listeners
+			function attachEventListeners() {
+				employeeSelect.addEventListener('change', handleEmployeeChange);
+				submitBtn.addEventListener('click', submitRequest);
+				clearBtn.addEventListener('click', clearSelections);
+			}
+
+			// Handle employee selection change
+			function handleEmployeeChange() {
+				selectedEmployee = employeeSelect.value;
+				employeeName.textContent = selectedEmployee;
+
+				if (selectedEmployee) {
+					loadEmployeeData();
+					employeeForm.classList.add('show');
+					generateShiftsGrid();
+				} else {
+					employeeForm.classList.remove('show');
+					selectedShifts = [];
+				}
+			}
+
+			// Load saved employee data
+			function loadEmployeeData() {
+				try {
+					const savedData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+					const weekKey = getWeekKey();
+					const weekData = savedData[weekKey] || {};
+					selectedShifts = weekData[selectedEmployee] || [];
+					updateCounter();
+				} catch (error) {
+					console.error('Error loading employee data:', error);
+					selectedShifts = [];
+				}
+			}
+
+			// Generate shifts grid
+			function generateShiftsGrid() {
+				shiftsGrid.innerHTML = '';
+
+				currentDeadlineWeek.forEach((date, dayIndex) => {
+					const hebrewDay = shortHebrewDays[dayIndex];
+					const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
+
+					// Day shift
+					const dayShift = createShiftElement(`${dayIndex}-day`, dateStr, 'יום');
+					shiftsGrid.appendChild(dayShift);
+
+					// Night shift
+					const nightShift = createShiftElement(`${dayIndex}-night`, dateStr, 'לילה');
+					shiftsGrid.appendChild(nightShift);
+				});
+			}
+
+			// Create shift element
+			function createShiftElement(shiftId, dateStr, shiftType) {
+				const shiftDiv = document.createElement('div');
+				shiftDiv.className = 'shift-option';
+				shiftDiv.dataset.shiftId = shiftId;
+
+				const isSelected = selectedShifts.includes(shiftId);
+				const isDisabled = selectedShifts.length >= 3 && !isSelected;
+
+				if (isSelected) shiftDiv.classList.add('selected');
+				if (isDisabled) shiftDiv.classList.add('disabled');
+
+				shiftDiv.innerHTML = `
+                <div class="shift-date">${dateStr}</div>
+                <div class="shift-time">${shiftType}</div>
+                ${isSelected ? '<div class="unavailable-badge">✗</div>' : ''}
+            `;
+
+				shiftDiv.addEventListener('click', () => toggleShift(shiftId));
+
+				return shiftDiv;
+			}
+
+			// Toggle shift selection
+			function toggleShift(shiftId) {
+				const index = selectedShifts.indexOf(shiftId);
+
+				if (index > -1) {
+					selectedShifts.splice(index, 1);
+				} else {
+					if (selectedShifts.length < 3) {
+						selectedShifts.push(shiftId);
+					}
+				}
+
+				generateShiftsGrid();
+				updateCounter();
+			}
+
+			// Update counter
+			function updateCounter() {
+				const count = selectedShifts.length;
+				counter.textContent = `משמרות לא זמינות: ${count}/3`;
+
+				counter.className = 'counter';
+				if (count === 2) counter.classList.add('warning');
+				if (count === 3) {
+					counter.classList.add('limit-reached');
+					counter.textContent += ' (הגעתם למגבלה)';
+				}
+			}
+
+			// Submit request
+			async function submitRequest() {
+				if (!selectedEmployee) {
+					alert('אנא בחרו שם קודם');
+					return;
+				}
+
+				setLoading(true);
+
+				try {
+					await new Promise(resolve => setTimeout(resolve, 1000));
+
+					if (selectedShifts.length === 0) {
+						const confirmed = confirm('לא בחרתם משמרות לא זמינות. האם אתם זמינים לכל המשמרות?');
+						if (!confirmed) {
+							setLoading(false);
+							return;
+						}
+					}
+
+					saveEmployeeRequest();
+
+					const message =
+						selectedShifts.length === 0
+							? 'הבקשה נשלחה בהצלחה! אתם זמינים לכל המשמרות.'
+							: `הבקשה נשלחה בהצלחה! בחרתם ${selectedShifts.length} משמרות שאתם לא זמינים אליהן.`;
+
+					alert(message);
+				} finally {
+					setLoading(false);
+				}
+			}
+
+			// Save employee request
+			function saveEmployeeRequest() {
+				try {
+					const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+					const weekKey = getWeekKey();
+
+					if (!allRequests[weekKey]) {
+						allRequests[weekKey] = {};
+					}
+
+					allRequests[weekKey][selectedEmployee] = [...selectedShifts];
+					localStorage.setItem('employeeRequests', JSON.stringify(allRequests));
+				} catch (error) {
+					console.error('Error saving employee request:', error);
+					alert('שגיאה בשמירת הבקשה');
+				}
+			}
+
+			// Clear selections
+			function clearSelections() {
+				if (confirm('האם אתם בטוחים שאתם רוצים לאפס את הבחירות?')) {
+					selectedShifts = [];
+					generateShiftsGrid();
+					updateCounter();
+				}
+			}
+
+			// Set loading state
+			function setLoading(state) {
+				loading = state;
+				submitBtn.disabled = state;
+				clearBtn.disabled = state || selectedShifts.length === 0;
+
+				if (state) {
+					submitBtn.innerHTML = '<span class="loading"></span> שולח...';
+				} else {
+					submitBtn.innerHTML = 'שליחת בקשה';
+				}
+			}
+
+			// Date utilities
+			function updateDeadlineInfo() {
+				try {
+					const now = new Date();
+					const currentDay = now.getDay();
+					const currentHour = now.getHours();
+
+					const passedDeadline = currentDay > 3 || (currentDay === 3 && currentHour >= 10);
+
+					let targetWeek;
+					let deadlineDate;
+
+					if (passedDeadline) {
+						targetWeek = getWeekAfterNext();
+						deadlineDate = getNextWednesday();
+					} else {
+						targetWeek = getNextWeekDates();
+						deadlineDate = getThisWednesday();
+					}
+
+					currentDeadlineWeek = targetWeek;
+
+					const timeLeft = deadlineDate.getTime() - now.getTime();
+					const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+					const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+					if (timeLeft > 0) {
+						const weekType = passedDeadline ? 'השבוע שאחרי הבא' : 'השבוע הבא';
+						deadlineInfo.textContent = `⏰ בקשות עבור ${weekType} | מועד אחרון: ${deadlineDate.toLocaleDateString(
+							'he-IL',
+						)} בשעה 10:00 (נותרו ${daysLeft} ימים ו-${hoursLeft} שעות)`;
+					} else {
+						deadlineInfo.textContent = `⏰ המועד אחרון עבר - בקשות חדשות הן עבור השבוع שאחרי הבא`;
+					}
+
+					if (selectedEmployee) {
+						generateShiftsGrid();
+					}
+				} catch (error) {
+					console.error('Error updating deadline info:', error);
+					deadlineInfo.textContent = 'טוען מידע על מועדים...';
+				}
+			}
+
+			function getNextWeekDates() {
+				const today = new Date();
+				const nextSunday = new Date(today);
+				nextSunday.setDate(today.getDate() + (7 - today.getDay()));
+
+				const dates = [];
+				for (let i = 0; i < 7; i++) {
+					const date = new Date(nextSunday);
+					date.setDate(nextSunday.getDate() + i);
+					dates.push(date);
+				}
+				return dates;
+			}
+
+			function getWeekAfterNext() {
+				const today = new Date();
+				const weekAfterNextSunday = new Date(today);
+				weekAfterNextSunday.setDate(today.getDate() + (14 - today.getDay()));
+
+				const dates = [];
+				for (let i = 0; i < 7; i++) {
+					const date = new Date(weekAfterNextSunday);
+					date.setDate(weekAfterNextSunday.getDate() + i);
+					dates.push(date);
+				}
+				return dates;
+			}
+
+			function getThisWednesday() {
+				const today = new Date();
+				const wednesday = new Date(today);
+				const daysUntilWednesday = (3 - today.getDay() + 7) % 7;
+				wednesday.setDate(today.getDate() + daysUntilWednesday);
+				wednesday.setHours(10, 0, 0, 0);
+				return wednesday;
+			}
+
+			function getNextWednesday() {
+				const thisWednesday = getThisWednesday();
+				const nextWednesday = new Date(thisWednesday);
+				nextWednesday.setDate(thisWednesday.getDate() + 7);
+				return nextWednesday;
+			}
+
+			function getWeekKey() {
+				if (!currentDeadlineWeek || currentDeadlineWeek.length === 0) return 'current';
+				const firstDate = currentDeadlineWeek[0];
+				return `${firstDate.getFullYear()}-${firstDate.getMonth()}-${firstDate.getDate()}`;
+			}
+
+			// Initialize when page loads
+			window.addEventListener('load', init);
+		</script>
 	</body>
 </html>
-
-<style>
-	* {
-		margin: 0;
-		padding: 0;
-		box-sizing: border-box;
-	}
-
-	body {
-		font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Arial Hebrew', sans-serif;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		min-height: 100vh;
-		padding: 20px;
-		direction: rtl;
-	}
-
-	.container {
-		max-width: 800px;
-		margin: 0 auto;
-		background: white;
-		border-radius: 15px;
-		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-		overflow: hidden;
-	}
-
-	.header {
-		background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-		color: white;
-		padding: 30px;
-		text-align: center;
-	}
-
-	.header h1 {
-		font-size: 2.5rem;
-		margin-bottom: 10px;
-		font-weight: 300;
-	}
-
-	.header p {
-		font-size: 1.1rem;
-		opacity: 0.9;
-	}
-
-	.content {
-		padding: 30px;
-	}
-
-	.employee-selector {
-		background: #f8f9fa;
-		border-radius: 12px;
-		padding: 25px;
-		margin-bottom: 25px;
-		text-align: center;
-	}
-
-	.employee-selector h3 {
-		margin-bottom: 20px;
-		color: #2c3e50;
-		font-size: 1.3rem;
-	}
-
-	.employee-dropdown {
-		width: 100%;
-		max-width: 300px;
-		padding: 15px;
-		border: 2px solid #e9ecef;
-		border-radius: 10px;
-		font-size: 1.1rem;
-		background: white;
-		margin-bottom: 20px;
-		transition: all 0.3s ease;
-	}
-
-	.employee-dropdown:focus {
-		outline: none;
-		border-color: #4facfe;
-		box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
-	}
-
-	.btn {
-		background: linear-gradient(135deg, #00b894, #00a085);
-		color: white;
-		border: none;
-		padding: 15px 30px;
-		border-radius: 10px;
-		font-size: 1.1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		margin: 10px;
-	}
-
-	.btn:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 10px 20px rgba(0, 184, 148, 0.3);
-	}
-
-	.btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-		transform: none;
-	}
-
-	.btn-danger {
-		background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-	}
-
-	.btn-success {
-		background: linear-gradient(135deg, #00b894, #00a085);
-	}
-
-	.employee-form {
-		background: #f8f9fa;
-		border-radius: 12px;
-		padding: 25px;
-		margin-bottom: 25px;
-		opacity: 0;
-		transform: translateY(20px);
-		transition: all 0.5s ease;
-	}
-
-	.employee-form.show {
-		opacity: 1;
-		transform: translateY(0);
-	}
-
-	.form-title {
-		font-size: 1.4rem;
-		font-weight: 600;
-		color: #2c3e50;
-		margin-bottom: 20px;
-		text-align: center;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 10px;
-	}
-
-	.form-title::before {
-		content: '👤';
-		font-size: 1.2rem;
-	}
-
-	.deadline-info {
-		background: linear-gradient(135deg, #74b9ff, #0984e3);
-		color: white;
-		padding: 15px;
-		border-radius: 10px;
-		margin-bottom: 20px;
-		text-align: center;
-		font-size: 0.9rem;
-	}
-
-	.shifts-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-		gap: 15px;
-		margin-bottom: 20px;
-	}
-
-	.shift-option {
-		background: white;
-		border: 2px solid #e9ecef;
-		border-radius: 10px;
-		padding: 15px;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		text-align: center;
-		position: relative;
-		user-select: none;
-	}
-
-	.shift-option:hover:not(.disabled) {
-		border-color: #4facfe;
-		transform: translateY(-2px);
-	}
-
-	.shift-option.selected {
-		background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-		color: white;
-		border-color: #ff6b6b;
-		transform: scale(1.02);
-	}
-
-	.shift-option.disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-		background: #f8f9fa;
-	}
-
-	.shift-date {
-		font-weight: 600;
-		font-size: 0.9rem;
-		margin-bottom: 5px;
-		color: #6c757d;
-	}
-
-	.shift-option.selected .shift-date {
-		color: white;
-	}
-
-	.shift-time {
-		font-size: 1.1rem;
-		font-weight: 500;
-	}
-
-	.unavailable-badge {
-		position: absolute;
-		top: -5px;
-		left: -5px;
-		background: #ff6b6b;
-		color: white;
-		border-radius: 50%;
-		width: 20px;
-		height: 20px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 12px;
-		font-weight: bold;
-	}
-
-	.counter {
-		text-align: center;
-		font-size: 1rem;
-		color: #6c757d;
-		margin: 20px 0;
-		padding: 15px;
-		background: #e9ecef;
-		border-radius: 8px;
-		transition: all 0.3s ease;
-	}
-
-	.counter.warning {
-		background: #fff3cd;
-		color: #856404;
-		border: 1px solid #ffeaa7;
-	}
-
-	.counter.limit-reached {
-		background: #f8d7da;
-		color: #721c24;
-		border: 1px solid #f5c6cb;
-	}
-
-	.alert {
-		padding: 15px;
-		border-radius: 10px;
-		margin: 15px 0;
-	}
-
-	.alert-info {
-		background: #cce7ff;
-		color: #004085;
-		border: 1px solid #99d6ff;
-	}
-
-	.form-actions {
-		text-align: center;
-		margin-top: 30px;
-	}
-
-	.loading {
-		display: inline-block;
-		width: 20px;
-		height: 20px;
-		border: 3px solid #f3f3f3;
-		border-top: 3px solid #4facfe;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		0% {
-			transform: rotate(0deg);
-		}
-		100% {
-			transform: rotate(360deg);
-		}
-	}
-
-	.hidden {
-		display: none;
-	}
-</style>
