@@ -291,18 +291,18 @@
 					<h3>בחרו את השם שלכם:</h3>
 					<select id="employeeSelect" class="employee-dropdown">
 						<option value="">-- בחרו שם --</option>
-						<option value="יוסי כהן">יוסי כהן</option>
-						<option value="רחל לוי">רחל לוי</option>
-						<option value="משה אברהם">משה אברהם</option>
-						<option value="שרה דוד">שרה דוד</option>
-						<option value="דני מלכה">דני מלכה</option>
-						<option value="מירי רוזן">מירי רוזן</option>
-						<option value="אבי שמש">אבי שמש</option>
-						<option value="טלי ברון">טלי ברון</option>
-						<option value="נתן גולד">נתן גולד</option>
-						<option value="מיכל ברק">מיכל ברק</option>
-						<option value="רון שחר">רון שחר</option>
-						<option value="תמר נוי">תמר נוי</option>
+						<option value="Employee1">יוסי כהן</option>
+						<option value="Employee2">רחל לוי</option>
+						<option value="Employee3">משה אברהם</option>
+						<option value="Employee4">שרה דוד</option>
+						<option value="Employee5">דני מלכה</option>
+						<option value="Employee6">מירי רוזן</option>
+						<option value="Employee7">אבי שמש</option>
+						<option value="Employee8">טלי ברון</option>
+						<option value="Employee9">נתן גולד</option>
+						<option value="Employee10">מיכל ברק</option>
+						<option value="Employee11">רון שחר</option>
+						<option value="Employee12">תמר נוי</option>
 					</select>
 					<select id="shiftsSelect" class="employee-dropdown">
 						<option value="">-- בחרו כמות משמרות --</option>
@@ -338,6 +338,22 @@
 		</div>
 
 		<script>
+			// Employee name mapping
+			const employeeNames = {
+				Employee1: 'יוסי כהן',
+				Employee2: 'רחל לוי',
+				Employee3: 'משה אברהם',
+				Employee4: 'שרה דוד',
+				Employee5: 'דני מלכה',
+				Employee6: 'מירי רוזן',
+				Employee7: 'אבי שמש',
+				Employee8: 'טלי ברון',
+				Employee9: 'נתן גולד',
+				Employee10: 'מיכל ברק',
+				Employee11: 'רון שחר',
+				Employee12: 'תמר נוי',
+			};
+
 			// Application state
 			let selectedEmployee = '';
 			let selectedShifts = [];
@@ -373,7 +389,8 @@
 			// Handle employee selection change
 			function handleEmployeeChange() {
 				selectedEmployee = employeeSelect.value;
-				employeeName.textContent = selectedEmployee;
+				const displayName = employeeNames[selectedEmployee] || selectedEmployee;
+				employeeName.textContent = displayName;
 
 				if (selectedEmployee) {
 					loadEmployeeData();
@@ -391,7 +408,8 @@
 					const savedData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
 					const weekKey = getWeekKey();
 					const weekData = savedData[weekKey] || {};
-					selectedShifts = weekData[selectedEmployee] || [];
+					const displayName = employeeNames[selectedEmployee] || selectedEmployee;
+					selectedShifts = weekData[displayName] || [];
 					updateCounter();
 				} catch (error) {
 					console.error('Error loading employee data:', error);
@@ -507,12 +525,13 @@
 				try {
 					const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
 					const weekKey = getWeekKey();
+					const displayName = employeeNames[selectedEmployee] || selectedEmployee;
 
 					if (!allRequests[weekKey]) {
 						allRequests[weekKey] = {};
 					}
 
-					allRequests[weekKey][selectedEmployee] = [...selectedShifts];
+					allRequests[weekKey][displayName] = [...selectedShifts];
 					localStorage.setItem('employeeRequests', JSON.stringify(allRequests));
 				} catch (error) {
 					console.error('Error saving employee request:', error);
