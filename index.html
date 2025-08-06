@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+const shiftsSelect = document.getElementById('shiftsSelect'); shiftsSelect.addEventListener('change', function() { // Update
+instructions text updateInstructions(); // Clear selections when shift number changes selectedShifts = []; if
+(selectedEmployee) { generateShiftsGrid(); updateCounter(); } });<!DOCTYPE html>
 <html lang="he" dir="rtl">
 	<head>
 		<meta charset="UTF-8" />
@@ -364,6 +366,7 @@
 
 			// DOM elements
 			const employeeSelect = document.getElementById('employeeSelect');
+			const shiftsSelect = document.getElementById('shiftsSelect');
 			const employeeForm = document.getElementById('employeeForm');
 			const employeeName = document.getElementById('employeeName');
 			const shiftsGrid = document.getElementById('shiftsGrid');
@@ -371,6 +374,7 @@
 			const submitBtn = document.getElementById('submitBtn');
 			const clearBtn = document.getElementById('clearBtn');
 			const deadlineInfo = document.getElementById('deadlineInfo');
+			const instructionsContent = document.getElementById('instructionsContent');
 
 			// Initialize application
 			function init() {
@@ -394,6 +398,7 @@
 
 				if (selectedEmployee) {
 					loadEmployeeData();
+					updateInstructions(); // Update instructions when employee is selected
 					employeeForm.classList.add('show');
 					generateShiftsGrid();
 				} else {
@@ -442,7 +447,18 @@
 				shiftDiv.dataset.shiftId = shiftId;
 
 				const isSelected = selectedShifts.includes(shiftId);
-				const isDisabled = selectedShifts.length >= 3 && !isSelected;
+				const selectedNoOfShifts = document.getElementById('shiftsSelect').value;
+
+				let maxShifts = 3; // default for "צו פתוח"
+				if (selectedNoOfShifts === '1') {
+					maxShifts = 1;
+				} else if (selectedNoOfShifts === '2') {
+					maxShifts = 2;
+				}
+
+				const isDisabled =
+					(selectedShifts.length >= maxShifts && !isSelected) ||
+					(!isSelected && !isShiftSelectionValid(shiftId, selectedShifts));
 
 				if (isSelected) shiftDiv.classList.add('selected');
 				if (isDisabled) shiftDiv.classList.add('disabled');
@@ -458,7 +474,80 @@
 				return shiftDiv;
 			}
 
-			// Toggle shift selection
+			// Check if shift selection is valid based on work rules
+			function isShiftSelectionValid(shiftId, currentSelections) {
+				const [dayIndex, shiftType] = shiftId.split('-');
+				const dayNum = parseInt(dayIndex);
+
+				// If no shifts selected yet, any shift is valid
+				if (currentSelections.length === 0) {
+					return true;
+				}
+
+				// Get selected number of shifts from dropdown
+				const selectedNoOfShifts = document.getElementById('shiftsSelect').value;
+
+				// If they selected "צו פתוח" (open order), normal 3-shift limit applies
+				if (selectedNoOfShifts === 'צו פתוח') {
+					return true;
+				}
+
+				// For 1 or 2 shifts, apply work rules
+				if (selectedNoOfShifts === '1' || selectedNoOfShifts === '2') {
+					// Check each currently selected shift
+					for (let selectedShift of currentSelections) {
+						const [selectedDayIndex, selectedShiftType] = selectedShift.split('-');
+						const selectedDayNum = parseInt(selectedDayIndex);
+
+						// Rule 1: Can't work day shift after night shift (24-hour rule)
+						if (selectedShiftType === 'night' && shiftType === 'day') {
+							// Check if trying to select day shift on the same day as night shift
+							if (selectedDayNum === dayNum) {
+								return false;
+							}
+							// Check if trying to select day shift on the day after night shift
+							if ((selectedDayNum + 1) % 7 === dayNum) {
+								return false;
+							}
+						}
+
+						// Rule 2: Can't work night shift before day shift (24-hour rule)
+						if (selectedShiftType === 'day' && shiftType === 'night') {
+							// Check if trying to select night shift on the same day as day shift
+							if (selectedDayNum === dayNum) {
+								return false;
+							}
+							// Check if trying to select night shift on the day before day shift
+							if ((dayNum + 1) % 7 === selectedDayNum) {
+								return false;
+							}
+						}
+
+						// Rule 3: Night shifts MUST be consecutive
+						if (selectedShiftType === 'night' && shiftType === 'night') {
+							// Check if consecutive nights (this is REQUIRED)
+							const isConsecutive =
+								Math.abs(selectedDayNum - dayNum) === 1 ||
+								(selectedDayNum === 6 && dayNum === 0) ||
+								(selectedDayNum === 0 && dayNum === 6);
+
+							if (!isConsecutive) {
+								return false; // Must be consecutive
+							}
+						}
+					}
+
+					// If we're trying to select a second shift and already have one, check the limit
+					if (selectedNoOfShifts === '1' && currentSelections.length >= 1) {
+						return false;
+					}
+					if (selectedNoOfShifts === '2' && currentSelections.length >= 2) {
+						return false;
+					}
+				}
+
+				return true;
+			}
 			function toggleShift(shiftId) {
 				const index = selectedShifts.indexOf(shiftId);
 
@@ -474,20 +563,136 @@
 				updateCounter();
 			}
 
-			// Update counter
+			// Update instructions text based on selected shifts
+			function updateInstructions() {
+				const selectedNoOfShifts = document.getElementById('shiftsSelect').value;
+
+				if (selectedNoOfShifts === '1') {
+					instructionsContent.textContent = 'בחר בבקשה את המשמרת הרצויה';
+				} else if (selectedNoOfShifts === '2') {
+					instructionsContent.textContent = 'בחר בבקשה את 2 המשמרות שברצונך לעשות';
+				} else if (selectedNoOfShifts === 'צו פתוח') {
+					instructionsContent.textContent = 'בחר עד 3 משמרות שאת/ה לא יכולים להשתבץ בהם';
+				} else {
+					instructionsContent.textContent = 'בחרו עד 3 משמרות שאתם לא יכולים להשתבץ בהם';
+				}
+			}
 			function updateCounter() {
 				const count = selectedShifts.length;
-				counter.textContent = `משמרות לא זמינות: ${count}/3`;
+				const selectedNoOfShifts = document.getElementById('shiftsSelect').value;
+
+				let maxShifts = 3; // default for "צו פתוח"
+				let counterText = `משמרות לא זמינות: ${count}/3`;
+
+				if (selectedNoOfShifts === '1') {
+					maxShifts = 1;
+					counterText = `משמרות לא זמינות: ${count}/1`;
+				} else if (selectedNoOfShifts === '2') {
+					maxShifts = 2;
+					counterText = `משמרות לא זמינות: ${count}/2`;
+				}
+
+				counter.textContent = counterText;
 
 				counter.className = 'counter';
-				if (count === 2) counter.classList.add('warning');
-				if (count === 3) {
+				if (count === maxShifts - 1 && maxShifts > 1) counter.classList.add('warning');
+				if (count === maxShifts) {
 					counter.classList.add('limit-reached');
 					counter.textContent += ' (הגעתם למגבלה)';
 				}
 			}
 
-			// Submit request
+			// Validate shift selection based on rules
+			function validateShiftSelection(numOfShifts, chosenShifts) {
+				// Check if "צו פתוח" (Open Order)
+				if (numOfShifts === 'צו פתוח') {
+					if (chosenShifts.length > 3) {
+						return { valid: false, message: `בחרתם ${chosenShifts.length} משמרות אך המקסימום הוא 3 משמרות` };
+					}
+					return { valid: true };
+				}
+
+				// Check if chose "1" shift
+				if (numOfShifts === '1') {
+					if (chosenShifts.length !== 1) {
+						return { valid: false, message: `בחרתם ${chosenShifts.length} משמרות אך צריך לבחור בדיוק 1 משמרת` };
+					}
+					return { valid: true };
+				}
+
+				// Check if chose "2" shifts
+				if (numOfShifts === '2') {
+					if (chosenShifts.length !== 2) {
+						return { valid: false, message: `בחרתם ${chosenShifts.length} משמרות אך צריך לבחור בדיוק 2 משמרות` };
+					}
+
+					// Parse the shifts
+					const shifts = chosenShifts.map(shiftId => {
+						const [dayIndex, shiftType] = shiftId.split('-');
+						return {
+							dayNum: parseInt(dayIndex),
+							shiftType: shiftType,
+							dayName: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'][parseInt(dayIndex)],
+						};
+					});
+
+					const nightShifts = shifts.filter(s => s.shiftType === 'night');
+					const dayShifts = shifts.filter(s => s.shiftType === 'day');
+
+					// Check for consecutive day and night (24-hour rule)
+					for (let nightShift of nightShifts) {
+						for (let dayShift of dayShifts) {
+							// Same day - day and night
+							if (nightShift.dayNum === dayShift.dayNum) {
+								return {
+									valid: false,
+									message: `לא ניתן לעבוד יום ולילה באותו יום (${nightShift.dayName}) - עבודה של 24 שעות אסורה`,
+								};
+							}
+
+							// Day after night
+							if ((nightShift.dayNum + 1) % 7 === dayShift.dayNum) {
+								return {
+									valid: false,
+									message: `לא ניתן לעבוד יום ביום ${dayShift.dayName} אחרי לילה ביום ${nightShift.dayName} - עבודה של 24 שעות אסורה`,
+								};
+							}
+
+							// Night before day
+							if ((dayShift.dayNum + 1) % 7 === nightShift.dayNum) {
+								return {
+									valid: false,
+									message: `לא ניתן לעבוד לילה ביום ${nightShift.dayName} לפני יום ביום ${dayShift.dayName} - עבודה של 24 שעות אסורה`,
+								};
+							}
+						}
+					}
+
+					// Check for non-consecutive nights
+					if (nightShifts.length === 2) {
+						const night1 = nightShifts[0];
+						const night2 = nightShifts[1];
+
+						// Check if consecutive
+						const isConsecutive =
+							Math.abs(night1.dayNum - night2.dayNum) === 1 ||
+							(night1.dayNum === 6 && night2.dayNum === 0) ||
+							(night1.dayNum === 0 && night2.dayNum === 6);
+
+						if (!isConsecutive) {
+							return {
+								valid: false,
+								message: `משמרות לילה חייבות להיות רצופות. בחרתם לילה ביום ${night1.dayName} ולילה ביום ${night2.dayName} - אלו לא רצופות`,
+							};
+						}
+					}
+
+					return { valid: true };
+				}
+
+				// If numOfShifts is not recognized
+				return { valid: false, message: 'אנא בחרו כמות משמרות מהרשימה הנפתחת' };
+			}
 			async function submitRequest() {
 				if (!selectedEmployee) {
 					alert('אנא בחרו שם קודם');
