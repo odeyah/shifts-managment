@@ -376,11 +376,13 @@
 			shiftsSelect.addEventListener('change', function () {
 				// Update instructions text
 				updateInstructions();
-
-				// Clear selections when shift number changes
+				// Clear previous selections
 				selectedShifts = [];
-
-				if (selectedEmployee) {
+				// Update selected shift number
+				selectedShiftNumber = parseInt(shiftsSelect.value);
+				// Only proceed if an employee is selected
+				if (employeeSelect.value !== '') {
+					selectedEmployee = employeeSelect.value;
 					generateShiftsGrid();
 					updateCounter();
 				}
@@ -403,17 +405,10 @@
 			// Handle employee selection change
 			function handleEmployeeChange() {
 				selectedEmployee = employeeSelect.value;
-				const displayName = employeeNames[selectedEmployee] || selectedEmployee;
-				employeeName.textContent = displayName;
 
-				if (selectedEmployee) {
-					loadEmployeeData();
-					updateInstructions(); // Update instructions when employee is selected
-					employeeForm.classList.add('show');
+				if (selectedEmployee && selectedShiftNumber > 0) {
 					generateShiftsGrid();
-				} else {
-					employeeForm.classList.remove('show');
-					selectedShifts = [];
+					updateCounter();
 				}
 			}
 
