@@ -3,8 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>מערכת בקשות משמרות - מנהל</title>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+		<title>מערכת בקשות משמרות - מנהלים</title>
 		<style>
 			* {
 				margin: 0;
@@ -13,22 +12,15 @@
 			}
 
 			body {
-				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Arial Hebrew', sans-serif;
+				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 				min-height: 100vh;
 				padding: 20px;
 				direction: rtl;
-				display: flex;
-				justify-content: center;
-				align-items: center;
-			}
-
-			#app {
-				width: 100%;
 			}
 
 			.container {
-				max-width: 800px;
+				max-width: 1000px;
 				margin: 0 auto;
 				background: white;
 				border-radius: 15px;
@@ -37,7 +29,7 @@
 			}
 
 			.header {
-				background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+				background: linear-gradient(135deg, #e17055 0%, #d63031 100%);
 				color: white;
 				padding: 30px;
 				text-align: center;
@@ -58,22 +50,45 @@
 				padding: 30px;
 			}
 
+			.login-section {
+				background: #f8f9fa;
+				border-radius: 12px;
+				padding: 25px;
+				margin-bottom: 25px;
+				text-align: center;
+			}
+
+			.login-input {
+				padding: 12px 20px;
+				border: 2px solid #e9ecef;
+				border-radius: 8px;
+				font-size: 1.1rem;
+				margin: 0 10px;
+				width: 200px;
+			}
+
+			.login-input:focus {
+				outline: none;
+				border-color: #e17055;
+				box-shadow: 0 0 0 3px rgba(225, 112, 85, 0.1);
+			}
+
 			.btn {
 				background: linear-gradient(135deg, #00b894, #00a085);
 				color: white;
 				border: none;
-				padding: 15px 30px;
-				border-radius: 10px;
-				font-size: 1.1rem;
+				padding: 12px 25px;
+				border-radius: 8px;
+				font-size: 1rem;
 				font-weight: 600;
 				cursor: pointer;
 				transition: all 0.3s ease;
-				margin: 10px;
+				margin: 5px;
 			}
 
 			.btn:hover {
 				transform: translateY(-2px);
-				box-shadow: 0 10px 20px rgba(0, 184, 148, 0.3);
+				box-shadow: 0 8px 15px rgba(0, 184, 148, 0.3);
 			}
 
 			.btn:disabled {
@@ -83,19 +98,19 @@
 			}
 
 			.btn-primary {
-				background: linear-gradient(135deg, #4facfe, #00f2fe);
+				background: linear-gradient(135deg, #e17055, #d63031);
 			}
 
 			.btn-primary:hover {
-				box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+				box-shadow: 0 8px 15px rgba(225, 112, 85, 0.3);
 			}
 
 			.btn-danger {
 				background: linear-gradient(135deg, #ff6b6b, #ee5a52);
 			}
 
-			.btn-success {
-				background: linear-gradient(135deg, #00b894, #00a085);
+			.btn-export {
+				background: linear-gradient(135deg, #74b9ff, #0984e3);
 			}
 
 			.manager-panel {
@@ -103,81 +118,86 @@
 				border-radius: 12px;
 				padding: 25px;
 				margin-top: 25px;
-				animation: fadeIn 0.5s ease;
+				display: none;
+				opacity: 0;
+				transform: translateY(20px);
+				transition: all 0.5s ease;
 			}
 
-			@keyframes fadeIn {
-				from {
-					opacity: 0;
-					transform: translateY(20px);
-				}
-				to {
-					opacity: 1;
-					transform: translateY(0);
-				}
+			.manager-panel.show {
+				display: block;
+				opacity: 1;
+				transform: translateY(0);
+			}
+
+			.manager-panel h3 {
+				color: #2c3e50;
+				margin-bottom: 20px;
+				font-size: 1.5rem;
+			}
+
+			.week-selector {
+				background: white;
+				border-radius: 8px;
+				padding: 15px;
+				margin-bottom: 20px;
+			}
+
+			.week-selector select {
+				padding: 10px 15px;
+				border: 2px solid #e9ecef;
+				border-radius: 8px;
+				font-size: 1rem;
+				background: white;
+				margin: 0 10px;
 			}
 
 			.requests-list {
 				margin-top: 20px;
 			}
 
-			.week-section {
-				margin-bottom: 30px;
-				padding: 15px;
-				border-radius: 10px;
-				background-color: #e9f5ff; /* Light blue background for week sections */
-				border: 1px solid #cce7ff;
-			}
-
-			.week-section h5 {
-				font-size: 1.2rem;
-				margin-bottom: 15px;
-				color: #004085;
-				text-align: center;
-			}
-
-			.request-item {
+			.requests-table {
+				width: 100%;
+				border-collapse: collapse;
 				background: white;
 				border-radius: 8px;
-				padding: 15px;
-				margin-bottom: 10px;
-				border-right: 4px solid #4facfe;
-				transition: all 0.3s ease;
+				overflow: hidden;
+				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 			}
 
-			.request-item:hover {
-				transform: translateX(-5px);
-				box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-			}
-
-			.request-employee {
+			.requests-table th {
+				background: linear-gradient(135deg, #e17055, #d63031);
+				color: white;
+				padding: 12px;
+				text-align: center;
 				font-weight: 600;
-				color: #2c3e50;
-				margin-bottom: 8px;
 			}
 
-			.request-shifts {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 8px;
+			.requests-table td {
+				padding: 12px;
+				text-align: center;
+				border-bottom: 1px solid #eee;
 			}
 
-			.request-shift {
-				background: #ffebee;
-				color: #c62828;
+			.requests-table tr:hover {
+				background: #f8f9fa;
+			}
+
+			.available {
+				background: #d4edda;
+				color: #155724;
 				padding: 4px 8px;
 				border-radius: 15px;
 				font-size: 0.85rem;
-				border: 1px solid #ffcdd2;
+				font-weight: 600;
 			}
 
-			.available-badge {
-				background: #e8f5e8;
-				color: #2e7d32;
+			.unavailable {
+				background: #f8d7da;
+				color: #721c24;
 				padding: 4px 8px;
 				border-radius: 15px;
 				font-size: 0.85rem;
-				border: 1px solid #c8e6c9;
 				font-weight: 600;
 			}
 
@@ -185,15 +205,18 @@
 				text-align: center;
 				color: #6c757d;
 				font-style: italic;
-				padding: 30px;
+				padding: 40px;
+				background: white;
+				border-radius: 8px;
 			}
 
-			.empty-state-small {
-				text-align: center;
-				color: #888;
-				font-style: italic;
-				padding: 10px;
-				font-size: 0.9em;
+			.success-message {
+				background: #d4edda;
+				color: #155724;
+				padding: 10px 15px;
+				border-radius: 8px;
+				margin: 10px 0;
+				border: 1px solid #c3e6cb;
 			}
 
 			.loading {
@@ -201,7 +224,7 @@
 				width: 20px;
 				height: 20px;
 				border: 3px solid #f3f3f3;
-				border-top: 3px solid #4facfe;
+				border-top: 3px solid #e17055;
 				border-radius: 50%;
 				animation: spin 1s linear infinite;
 			}
@@ -215,331 +238,567 @@
 				}
 			}
 
-			/* Custom Modal Styles */
-			.custom-modal-overlay {
-				position: fixed;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 100%;
-				background: rgba(0, 0, 0, 0.6);
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				z-index: 1000;
-			}
-
-			.custom-modal {
-				background: white;
-				padding: 30px;
-				border-radius: 15px;
-				box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-				text-align: center;
-				max-width: 400px;
-				width: 90%;
-			}
-
-			.custom-modal p {
-				font-size: 1.1rem;
-				margin-bottom: 20px;
-				color: #333;
-			}
-
-			.custom-modal .modal-actions {
-				display: flex;
-				justify-content: center;
-				gap: 15px;
+			.export-info {
+				background: #cce7ff;
+				color: #004085;
+				padding: 15px;
+				border-radius: 8px;
+				margin: 15px 0;
+				border: 1px solid #99d6ff;
 			}
 		</style>
 	</head>
 	<body>
-		<div id="app">
-			<div class="container">
-				<div class="header">
-					<h1>פאנל מנהלים</h1>
-					<p>ניהול בקשות משמרות</p>
-				</div>
-
-				<div class="content">
-					<!-- Manager Login -->
-					<div v-if="!isManager" class="manager-login">
-						<strong>כניסת מנהלים:</strong>
-						<input
-							type="password"
-							v-model="managerPasswordInput"
-							placeholder="סיסמת מנהל"
-							@keyup.enter="checkManagerAccess"
-						/>
-						<button class="btn btn-primary" @click="checkManagerAccess" :disabled="!managerPasswordInput">כניסה</button>
-					</div>
-
-					<!-- Manager Panel -->
-					<div v-if="isManager" class="manager-panel">
-						<h3>פאנל מנהלים</h3>
-						<div class="form-actions">
-							<button class="btn btn-primary" @click="loadAllRequests" :disabled="loading">צפייה בכל הבקשות</button>
-							<button class="btn" @click="exportAllRequests" :disabled="loading">ייצוא לגוגל שיטס</button>
-							<button class="btn btn-danger" @click="clearAllData" :disabled="loading">איפוס כל הנתונים</button>
-						</div>
-
-						<div v-if="showRequests" class="requests-list">
-							<h4>בקשות:</h4>
-							<div v-if="Object.keys(allRequests).length === 0" class="empty-state">אין בקשות עדיין</div>
-							<div v-else>
-								<div v-for="(weekRequests, weekKey) in allRequests" :key="weekKey" class="week-section">
-									<h5>שבוע: {{ formatWeekKeyForDisplay(weekKey) }}</h5>
-									<div v-if="Object.keys(weekRequests).length === 0" class="empty-state-small">אין בקשות לשבוע זה.</div>
-									<div v-else>
-										<div v-for="(requestData, employee) in weekRequests" :key="employee" class="request-item">
-											<div class="request-employee">
-												{{ employee }} {{ getManagerDisplayLimitText(requestData.shifts.length, requestData.chosenLimit) }}
-											</div>
-											<div class="request-shifts">
-												<span
-													v-if="requestData.shifts.length === 0 && requestData.chosenLimit === 3"
-													class="available-badge"
-												>
-													זמין לכל המשמרות
-												</span>
-												<span v-for="shift in requestData.shifts" :key="shift" class="request-shift">
-													{{ formatShiftForDisplay(shift) }}
-												</span>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
+		<div class="container">
+			<div class="header">
+				<h1>🔧 פאנל מנהלים</h1>
+				<p>צפייה וניהול בקשות משמרות עובדים</p>
 			</div>
 
-			<!-- Custom Modal Component -->
-			<div v-if="showModal" class="custom-modal-overlay">
-				<div class="custom-modal">
-					<p>{{ modalMessage }}</p>
-					<div class="modal-actions">
-						<button v-if="modalType === 'confirm'" @click="modalResolve(true)" class="btn btn-success">כן</button>
-						<button v-if="modalType === 'confirm'" @click="modalResolve(false)" class="btn btn-danger">לא</button>
-						<button v-if="modalType === 'alert'" @click="modalResolve(true)" class="btn btn-primary">אישור</button>
+			<div class="content">
+				<!-- Manager Login -->
+				<div class="login-section" id="loginSection">
+					<h3>כניסת מנהלים</h3>
+					<input
+						type="password"
+						id="passwordInput"
+						class="login-input"
+						placeholder="סיסמת מנהל"
+						onkeyup="if(event.key==='Enter') checkPassword()"
+					/>
+					<button class="btn btn-primary" onclick="checkPassword()">כניסה</button>
+				</div>
+
+				<!-- Manager Panel -->
+				<div class="manager-panel" id="managerPanel">
+					<h3>ניהול בקשות משמרות</h3>
+
+					<!-- Week Selector -->
+					<div class="week-selector">
+						<label>בחר שבוע לצפייה:</label>
+						<select id="weekSelect" onchange="loadRequestsForWeek()">
+							<option value="">-- בחר שבוע --</option>
+						</select>
+						<button class="btn btn-primary" onclick="loadAllWeeks()">רענן רשימת שבועות</button>
+					</div>
+
+					<!-- Action Buttons -->
+					<div style="text-align: center; margin: 20px 0">
+						<button class="btn btn-primary" onclick="loadCurrentWeekRequests()">צפה בבקשות לשבוע הנוכח</button>
+						<button class="btn btn-export" onclick="exportToCSV()">ייצוא לגוגל שיטס</button>
+						<button class="btn btn-danger" onclick="clearAllData()">מחק את כל הנתונים</button>
+						<button class="btn" onclick="logout()" style="background: linear-gradient(135deg, #6c757d, #495057)">
+							התנתק
+						</button>
+					</div>
+
+					<!-- Requests Display -->
+					<div class="requests-list" id="requestsList">
+						<!-- Requests will be loaded here -->
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<script>
-			const { createApp } = Vue;
+			// Security Configuration - Change these before deployment
+			const SECURITY_CONFIG = {
+				// Enable URL password (main security method)
+				useUrlPassword: true,
+				urlPasswordParam: 'pwd',
 
-			createApp({
-				data() {
-					return {
-						// Manager related data
-						managerPasswordInput: '',
-						managerPassword: 'Aa321321', // IMPORTANT: Change this password in a real application!
-						isManager: false,
-						showRequests: false,
-						allRequests: {}, // Stores all employee requests from localStorage
+				// Your secret passwords (change these!)
+				validPasswords: ['Manager2024!', 'SecureAdmin123', 'ShiftManager2024'],
 
-						// UI state
-						loading: false, // Controls loading spinner on buttons
+				// Optional: Time restrictions
+				restrictByTime: false,
+				allowedHours: { start: 8, end: 18 }, // 8 AM to 6 PM
 
-						// Hebrew days for display (needed for formatting shifts)
-						shortHebrewDays: ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"],
+				// Debug mode (set to false for production)
+				showPasswordHints: true,
+			};
 
-						// Custom Modal state
-						showModal: false,
-						modalMessage: '',
-						modalType: 'alert', // 'alert' or 'confirm'
-						modalResolve: null, // Function to resolve the modal promise
-					};
-				},
+			// Get current timestamp for session validation
+			const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+			let sessionStartTime = null;
+			const EMPLOYEES = [
+				'יוסי כהן',
+				'רחל לוי',
+				'משה אברהם',
+				'שרה דוד',
+				'דני מלכה',
+				'מירי רוזן',
+				'אבי שמש',
+				'טלי ברון',
+				'נתן גולד',
+				'מיכל ברק',
+				'רון שחר',
+				'תמר נוי',
+			];
+			const SHORT_HEBREW_DAYS = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"];
+			const FULL_HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
-				mounted() {
-					// Attempt to load requests immediately if manager is already logged in (e.g., after refresh)
-					// This assumes 'isManager' could be persisted or set via other means not shown here.
-					// For this standalone page, manager access is purely via password.
-				},
+			let currentWeekKey = '';
+			let currentWeekDates = [];
 
-				methods: {
-					/* --- Manager Panel Logic --- */
+			// Enhanced password checking with multiple security layers
+			function checkPassword() {
+				const inputPassword = document.getElementById('passwordInput').value;
 
-					// Checks the manager password for access
-					async checkManagerAccess() {
-						if (this.managerPasswordInput === this.managerPassword) {
-							this.isManager = true;
-							this.managerPasswordInput = ''; // Clear password after successful login
-							await this.showCustomModal('התחברת בהצלחה כמנהל!', 'alert');
-							this.loadAllRequests(); // Load requests immediately upon successful login
-						} else if (this.managerPasswordInput) {
-							await this.showCustomModal('סיסמה שגויה', 'alert');
-							this.managerPasswordInput = ''; // Clear password input on wrong attempt
-						}
-					},
+				// Check if session has expired
+				if (sessionStartTime && Date.now() - sessionStartTime > SESSION_TIMEOUT) {
+					alert('תקופת הגישה פגה. אנא התחבר שנית.');
+					logout();
+					return;
+				}
 
-					// Loads all employee requests from localStorage, grouped by week.
-					loadAllRequests() {
-						try {
-							this.allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-							this.showRequests = true;
-						} catch (error) {
-							console.error('Error loading requests:', error);
-							this.allRequests = {}; // Reset to empty if there's an error
-							this.showRequests = true;
-						}
-					},
+				let isValidPassword = false;
 
-					// Exports all requests to CSV format and copies to clipboard
-					async exportAllRequests() {
-						if (!this.isManager) return;
+				// Check URL parameter password
+				if (SECURITY_CONFIG.useUrlPassword) {
+					const urlParams = new URLSearchParams(window.location.search);
+					const urlPassword = urlParams.get(SECURITY_CONFIG.urlPasswordParam);
+					if (urlPassword && inputPassword === urlPassword) {
+						isValidPassword = true;
+					}
+				}
 
-						this.setLoading(true);
+				// Check against multiple valid passwords
+				if (SECURITY_CONFIG.validPasswords.includes(inputPassword)) {
+					isValidPassword = true;
+				}
 
-						try {
-							const allRequestsData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-							let csvContent = 'שבוע,שם,';
-
-							// Dynamically create headers for shifts based on a full week structure
-							// This assumes a standard 7-day week for export purposes
-							const tempDate = new Date();
-							tempDate.setDate(tempDate.getDate() - tempDate.getDay()); // Start from Sunday of current week
-							const weekDays = [];
-							for (let i = 0; i < 7; i++) {
-								const date = new Date(tempDate);
-								date.setDate(tempDate.getDate() + i);
-								const hebrewDay = this.shortHebrewDays[i];
-								const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
-								weekDays.push({
-									id_day: `${i}-day`,
-									id_night: `${i}-night`,
-									header_day: `${dateStr} יום`,
-									header_night: `${dateStr} לילה`,
-								});
-							}
-
-							weekDays.forEach(day => {
-								csvContent += `${day.header_day},${day.header_night},`;
-							});
-							csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
-
-							// Iterate through each week and then each employee's request
-							for (const weekKey in allRequestsData) {
-								const weekRequests = allRequestsData[weekKey];
-								const formattedWeek = this.formatWeekKeyForDisplay(weekKey);
-
-								for (const employee in weekRequests) {
-									const requestData = weekRequests[employee];
-									const employeeShifts = requestData.shifts || [];
-									csvContent += `${formattedWeek},${employee},`;
-
-									weekDays.forEach(day => {
-										const isUnavailableModeForExport = requestData.chosenLimit === 3;
-
-										let dayStatus, nightStatus;
-										if (isUnavailableModeForExport) {
-											dayStatus = employeeShifts.includes(day.id_day) ? 'לא זמין' : 'זמין';
-											nightStatus = employeeShifts.includes(day.id_night) ? 'לא זמין' : 'זמין';
-										} else {
-											// For 'desired' shifts, inverse the logic for 'unavailable' in the export
-											dayStatus = employeeShifts.includes(day.id_day) ? 'זמין' : 'לא זמין';
-											nightStatus = employeeShifts.includes(day.id_night) ? 'זמין' : 'לא זמין';
-										}
-										csvContent += `${dayStatus},${nightStatus},`;
-									});
-									csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
-								}
-							}
-
-							// Use a temporary textarea to copy to clipboard for broader compatibility
-							const tempTextArea = document.createElement('textarea');
-							tempTextArea.value = csvContent;
-							document.body.appendChild(tempTextArea);
-							tempTextArea.select();
-							document.execCommand('copy');
-							document.body.removeChild(tempTextArea);
-
-							await this.showCustomModal('הנתונים הועתקו ללוח! תוכלו כעת להדביק אותם בגוגל שיטס.', 'alert');
-						} catch (error) {
-							console.error('Export error:', error);
-							await this.showCustomModal('שגיאה בייצוא הנתונים', 'alert');
-						} finally {
-							this.setLoading(false);
-						}
-					},
-
-					// Clears all data from localStorage (DANGEROUS OPERATION)
-					async clearAllData() {
-						if (!this.isManager) return;
-
-						const confirmed = await this.showCustomModal(
-							'האם אתם בטוחים שאתם רוצים לאפס את כל הנתונים? פעולה זו בלתי הפיכה!',
-							'confirm',
+				// Time-based restriction
+				if (SECURITY_CONFIG.restrictByTime) {
+					const currentHour = new Date().getHours();
+					if (currentHour < SECURITY_CONFIG.allowedHours.start || currentHour > SECURITY_CONFIG.allowedHours.end) {
+						alert(
+							'גישה אפשרית רק בין השעות ' +
+								SECURITY_CONFIG.allowedHours.start +
+								':00 ל-' +
+								SECURITY_CONFIG.allowedHours.end +
+								':00',
 						);
-						if (confirmed) {
-							try {
-								localStorage.removeItem('employeeRequests');
-								this.allRequests = {};
-								this.showRequests = false;
-								await this.showCustomModal('כל הנתונים נמחקו בהצלחה!', 'alert');
-							} catch (error) {
-								console.error('Error clearing data:', error);
-								await this.showCustomModal('שגיאה במחיקת הנתונים', 'alert');
-							}
-						}
-					},
+						return;
+					}
+				}
 
-					/* --- Helper Functions (for display and data handling) --- */
+				if (isValidPassword) {
+					sessionStartTime = Date.now();
+					document.getElementById('loginSection').style.display = 'none';
+					document.getElementById('managerPanel').classList.add('show');
+					loadAllWeeks();
+					loadCurrentWeekRequests();
 
-					// Formats a shift ID for display (e.g., "א' - יום")
-					formatShiftForDisplay(shiftId) {
-						const [dayIndex, shiftType] = shiftId.split('-');
-						const hebrewDay = this.shortHebrewDays[parseInt(dayIndex)];
-						const shiftTypeHe = shiftType === 'day' ? 'יום' : 'לילה';
-						return `${hebrewDay} - ${shiftTypeHe}`;
-					},
+					// Start session timer
+					startSessionTimer();
 
-					// Helper to get the correct display text for manager view based on chosen limit
-					getManagerDisplayLimitText(shiftCount, chosenLimit) {
-						if (chosenLimit === 3) {
-							return `(${shiftCount}/${chosenLimit} משמרות לא זמינות)`;
-						} else {
-							return `(${shiftCount}/${chosenLimit} משמרות רצויות)`;
-						}
-					},
+					alert('התחברת בהצלחה כמנהל!');
 
-					// Formats the week key (e.g., "2025-7-6") into a readable date range
-					formatWeekKeyForDisplay(weekKey) {
-						const [year, month, day] = weekKey.split('-').map(Number);
-						const startDate = new Date(year, month, day);
-						const endDate = new Date(startDate);
-						endDate.setDate(startDate.getDate() + 6); // Add 6 days to get to Saturday
+					// Clear password field for security
+					document.getElementById('passwordInput').value = '';
 
-						const options = { day: 'numeric', month: 'numeric', year: 'numeric' };
-						return `${startDate.toLocaleDateString('he-IL', options)} - ${endDate.toLocaleDateString('he-IL', options)}`;
-					},
+					// Remove password from URL for security
+					if (SECURITY_CONFIG.useUrlPassword) {
+						const url = new URL(window.location);
+						url.searchParams.delete(SECURITY_CONFIG.urlPasswordParam);
+						window.history.replaceState({}, document.title, url);
+					}
+				} else {
+					// Add delay to prevent brute force
+					setTimeout(() => {
+						alert('סיסמה שגויה');
+						document.getElementById('passwordInput').value = '';
+					}, 1000);
 
-					/* --- UI State Management --- */
+					// Show hint if enabled
+					if (SECURITY_CONFIG.showPasswordHints) {
+						console.log('Hint: Check the URL parameters or contact admin');
+					}
+				}
+			}
 
-					// Sets the loading state for buttons
-					setLoading(state) {
-						this.loading = state;
-					},
+			// Session management
+			function startSessionTimer() {
+				// Check session every minute
+				setInterval(() => {
+					if (sessionStartTime && Date.now() - sessionStartTime > SESSION_TIMEOUT) {
+						alert('תקופת הגישה פגה מטעמי אבטחה');
+						logout();
+					}
+				}, 60000);
+			}
 
-					/* --- Custom Modal Functions --- */
+			// Logout function
+			function logout() {
+				sessionStartTime = null;
+				document.getElementById('loginSection').style.display = 'block';
+				document.getElementById('managerPanel').classList.remove('show');
+				document.getElementById('passwordInput').value = '';
 
-					// Displays a custom modal (alert or confirm)
-					async showCustomModal(message, type = 'alert') {
-						this.modalMessage = message;
-						this.modalType = type;
-						this.showModal = true;
-						return new Promise(resolve => {
-							this.modalResolve = result => {
-								this.showModal = false;
-								resolve(result);
-							};
+				// Clear any sensitive data from memory
+				currentWeekKey = '';
+				currentWeekDates = [];
+			}
+
+			// Load all available weeks
+			function loadAllWeeks() {
+				try {
+					const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+					const weekSelect = document.getElementById('weekSelect');
+
+					// Clear existing options
+					weekSelect.innerHTML = '<option value="">-- בחר שבוע --</option>';
+
+					// Add options for each week that has data
+					Object.keys(allRequests).forEach(weekKey => {
+						const option = document.createElement('option');
+						option.value = weekKey;
+						option.textContent = formatWeekKey(weekKey);
+						weekSelect.appendChild(option);
+					});
+
+					console.log('Available weeks:', Object.keys(allRequests));
+				} catch (error) {
+					console.error('Error loading weeks:', error);
+				}
+			}
+
+			// Format week key for display
+			function formatWeekKey(weekKey) {
+				if (weekKey === 'current') return 'שבוע נוכחי';
+
+				try {
+					const [year, month, day] = weekKey.split('-');
+					const date = new Date(parseInt(year), parseInt(month), parseInt(day));
+					return `שבוע של ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+				} catch (error) {
+					return weekKey;
+				}
+			}
+
+			// Load current week requests
+			function loadCurrentWeekRequests() {
+				const now = new Date();
+				const currentDay = now.getDay();
+				const currentHour = now.getHours();
+
+				// Determine which week to show
+				const passedDeadline = currentDay > 3 || (currentDay === 3 && currentHour >= 10);
+				let targetWeek;
+
+				if (passedDeadline) {
+					targetWeek = getWeekAfterNext();
+				} else {
+					targetWeek = getNextWeekDates();
+				}
+
+				currentWeekDates = targetWeek;
+				currentWeekKey = generateWeekKey(targetWeek[0]);
+
+				loadRequestsForWeek(currentWeekKey);
+			}
+
+			// Load requests for selected week
+			function loadRequestsForWeek(weekKey = null) {
+				if (!weekKey) {
+					weekKey = document.getElementById('weekSelect').value;
+				}
+
+				if (!weekKey) {
+					document.getElementById('requestsList').innerHTML = '<div class="empty-state">בחר שבוע מהרשימה הנפתחת</div>';
+					return;
+				}
+
+				try {
+					const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+					const weekRequests = allRequests[weekKey] || {};
+
+					// If we don't have dates for this week, generate them
+					if (!currentWeekDates.length && weekKey !== 'current') {
+						currentWeekDates = generateWeekDates(weekKey);
+					}
+
+					displayRequests(weekRequests, weekKey);
+					currentWeekKey = weekKey;
+				} catch (error) {
+					console.error('Error loading requests:', error);
+					document.getElementById('requestsList').innerHTML = '<div class="empty-state">שגיאה בטעינת הנתונים</div>';
+				}
+			}
+
+			// Display requests in a table
+			function displayRequests(weekRequests, weekKey) {
+				const requestsList = document.getElementById('requestsList');
+
+				// Filter to only employees who have submitted forms
+				const employeesWithSubmissions = Object.keys(weekRequests).filter(employee => weekRequests[employee] !== undefined);
+
+				if (employeesWithSubmissions.length === 0) {
+					requestsList.innerHTML = `
+                    <div class="empty-state">
+                        <h4>אין בקשות עבור השבוע הנבחר</h4>
+                        <p>לא נמצאו בקשות משמרות עבור ${formatWeekKey(weekKey)}</p>
+                    </div>
+                `;
+					return;
+				}
+
+				let tableHTML = `
+                <h4>בקשות שהוגשו עבור ${formatWeekKey(weekKey)} (${employeesWithSubmissions.length} עובדים):</h4>
+                <table class="requests-table">
+                    <thead>
+                        <tr>
+                            <th>שם עובד</th>
+            `;
+
+				// Add day headers
+				currentWeekDates.forEach((date, index) => {
+					const hebrewDay = SHORT_HEBREW_DAYS[index];
+					const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
+					tableHTML += `<th>${dateStr}<br>יום</th><th>${dateStr}<br>לילה</th>`;
+				});
+
+				tableHTML += `
+                            <th>סה"כ לא זמין</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+				// Add employee rows - only those who submitted
+				employeesWithSubmissions.forEach(employee => {
+					const employeeShifts = weekRequests[employee] || [];
+
+					tableHTML += `<tr><td><strong>${employee}</strong></td>`;
+
+					// Add status for each shift
+					currentWeekDates.forEach((date, dayIndex) => {
+						const dayId = `${dayIndex}-day`;
+						const nightId = `${dayIndex}-night`;
+
+						const dayStatus = employeeShifts.includes(dayId)
+							? '<span class="unavailable">לא זמין</span>'
+							: '<span class="available">זמין</span>';
+
+						const nightStatus = employeeShifts.includes(nightId)
+							? '<span class="unavailable">לא זמין</span>'
+							: '<span class="available">זמין</span>';
+
+						tableHTML += `<td>${dayStatus}</td><td>${nightStatus}</td>`;
+					});
+
+					// Add total unavailable shifts count
+					const unavailableCount = employeeShifts.length;
+					const countColor = unavailableCount === 0 ? 'available' : 'unavailable';
+					tableHTML += `<td><span class="${countColor}">${unavailableCount}</span></td>`;
+
+					tableHTML += `</tr>`;
+				});
+
+				tableHTML += `</tbody></table>`;
+
+				// Add summary info
+				tableHTML += `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                    <h5 style="color: #2c3e50; margin-bottom: 10px;">סיכום:</h5>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div>📝 <strong>עובדים שהגישו בקשות:</strong> ${employeesWithSubmissions.length}</div>
+                        <div>👥 <strong>סה"כ עובדים במערכת:</strong> ${EMPLOYEES.length}</div>
+                        <div>⏳ <strong>עובדים שלא הגישו:</strong> ${
+													EMPLOYEES.length - employeesWithSubmissions.length
+												}</div>
+                    </div>
+                </div>
+            `;
+
+				// Show employees who haven't submitted if any
+				const employeesWithoutSubmissions = EMPLOYEES.filter(emp => !employeesWithSubmissions.includes(emp));
+				if (employeesWithoutSubmissions.length > 0) {
+					tableHTML += `
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                        <h5 style="color: #856404; margin-bottom: 10px;">⚠️ עובדים שטרם הגישו בקשות:</h5>
+                        <div style="color: #856404;">
+                            ${employeesWithoutSubmissions.join(', ')}
+                        </div>
+                    </div>
+                `;
+				}
+
+				requestsList.innerHTML = tableHTML;
+			}
+
+			// Export to CSV
+			function exportToCSV() {
+				if (!currentWeekKey) {
+					alert('אנא בחר שבוע תחילה');
+					return;
+				}
+
+				try {
+					const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+					const weekRequests = allRequests[currentWeekKey] || {};
+
+					let csvContent = 'שם,';
+
+					// Create headers
+					currentWeekDates.forEach((date, index) => {
+						const hebrewDay = SHORT_HEBREW_DAYS[index];
+						const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
+						csvContent += `"${dateStr} יום","${dateStr} לילה",`;
+					});
+					csvContent = csvContent.slice(0, -1) + '\n';
+
+					// Add employee data
+					EMPLOYEES.forEach(employee => {
+						const employeeShifts = weekRequests[employee] || [];
+						csvContent += `"${employee}",`;
+
+						currentWeekDates.forEach((date, dayIndex) => {
+							const dayId = `${dayIndex}-day`;
+							const nightId = `${dayIndex}-night`;
+
+							const dayStatus = employeeShifts.includes(dayId) ? 'לא זמין' : 'זמין';
+							const nightStatus = employeeShifts.includes(nightId) ? 'לא זמין' : 'זמין';
+
+							csvContent += `"${dayStatus}","${nightStatus}",`;
 						});
-					},
-				},
-			}).mount('#app');
+
+						csvContent = csvContent.slice(0, -1) + '\n';
+					});
+
+					// Copy to clipboard
+					navigator.clipboard
+						.writeText(csvContent)
+						.then(() => {
+							document
+								.getElementById('requestsList')
+								.insertAdjacentHTML(
+									'afterbegin',
+									'<div class="success-message">✅ הנתונים הועתקו للוח! תוכל כעת להדביק אותם בגוגל שיטס או אקסל</div>',
+								);
+
+							// Remove success message after 5 seconds
+							setTimeout(() => {
+								const successMsg = document.querySelector('.success-message');
+								if (successMsg) successMsg.remove();
+							}, 5000);
+						})
+						.catch(() => {
+							// Fallback for older browsers
+							const textArea = document.createElement('textarea');
+							textArea.value = csvContent;
+							document.body.appendChild(textArea);
+							textArea.select();
+							document.execCommand('copy');
+							document.body.removeChild(textArea);
+
+							alert('הנתונים הועתקו ללוח! (שיטה חלופית)');
+						});
+				} catch (error) {
+					console.error('Export error:', error);
+					alert('שגיאה בייצוא הנתונים');
+				}
+			}
+
+			// Clear all data
+			function clearAllData() {
+				if (confirm('האם אתה בטוח שברצונך למחוק את כל נתוני הבקשות? פעולה זו אינה ניתנת לביטול!')) {
+					if (confirm('זו פעולה סופית! כל הבקשות של כל העובדים יימחקו. האם להמשיך?')) {
+						localStorage.removeItem('employeeRequests');
+						document.getElementById('requestsList').innerHTML =
+							'<div class="success-message">✅ כל הנתונים נמחקו בהצלחה!</div>';
+						loadAllWeeks(); // Refresh week list
+						alert('כל הנתונים נמחקו בהצלחה!');
+					}
+				}
+			}
+
+			// Date utility functions
+			function getNextWeekDates() {
+				const today = new Date();
+				const nextSunday = new Date(today);
+				nextSunday.setDate(today.getDate() + (7 - today.getDay()));
+
+				const dates = [];
+				for (let i = 0; i < 7; i++) {
+					const date = new Date(nextSunday);
+					date.setDate(nextSunday.getDate() + i);
+					dates.push(date);
+				}
+				return dates;
+			}
+
+			function getWeekAfterNext() {
+				const today = new Date();
+				const weekAfterNextSunday = new Date(today);
+				weekAfterNextSunday.setDate(today.getDate() + (14 - today.getDay()));
+
+				const dates = [];
+				for (let i = 0; i < 7; i++) {
+					const date = new Date(weekAfterNextSunday);
+					date.setDate(weekAfterNextSunday.getDate() + i);
+					dates.push(date);
+				}
+				return dates;
+			}
+
+			function generateWeekKey(firstDate) {
+				return `${firstDate.getFullYear()}-${firstDate.getMonth()}-${firstDate.getDate()}`;
+			}
+
+			function generateWeekDates(weekKey) {
+				try {
+					const [year, month, day] = weekKey.split('-');
+					const startDate = new Date(parseInt(year), parseInt(month), parseInt(day));
+
+					const dates = [];
+					for (let i = 0; i < 7; i++) {
+						const date = new Date(startDate);
+						date.setDate(startDate.getDate() + i);
+						dates.push(date);
+					}
+					return dates;
+				} catch (error) {
+					console.error('Error generating week dates:', error);
+					return getNextWeekDates(); // Fallback
+				}
+			}
+
+			// Initialize page with URL password check
+			window.addEventListener('load', function () {
+				console.log('Manager panel loaded');
+
+				// Check for URL password on page load
+				const urlParams = new URLSearchParams(window.location.search);
+				const urlPassword = urlParams.get(SECURITY_CONFIG.urlPasswordParam);
+
+				if (urlPassword && SECURITY_CONFIG.useUrlPassword) {
+					// Auto-fill password field
+					document.getElementById('passwordInput').value = urlPassword;
+
+					// Show login hint
+					const loginSection = document.getElementById('loginSection');
+					loginSection.insertAdjacentHTML(
+						'beforeend',
+						`
+                    <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 0.9rem;">
+                        🔑 זוהה סיסמה ב-URL. לחץ "כניסה" או Enter להתחברות.
+                    </div>
+                `,
+					);
+
+					// Optional: Auto-login after 2 seconds
+					setTimeout(() => {
+						if (document.getElementById('passwordInput').value === urlPassword) {
+							checkPassword();
+						}
+					}, 2000);
+				}
+
+				// Focus on password input
+				document.getElementById('passwordInput').focus();
+			});
 		</script>
 	</body>
 </html>
