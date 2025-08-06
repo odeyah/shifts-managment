@@ -184,7 +184,7 @@
 			}
 
 			.form-title::before {
-				content: '�';
+				content: '👤';
 				font-size: 1.2rem;
 			}
 
@@ -541,11 +541,13 @@
 								<h4>בקשות לשבוע הרלוונטי:</h4>
 								<div v-if="Object.keys(allRequests).length === 0" class="empty-state">אין בקשות עדיין</div>
 								<div v-else>
-									<div v-for="(requests, employee) in allRequests" :key="employee" class="request-item">
-										<div class="request-employee">{{ employee }} ({{ requests.length }}/3 בקשות)</div>
+									<div v-for="(requestData, employee) in allRequests" :key="employee" class="request-item">
+										<div class="request-employee">
+											{{ employee }} ({{ requestData.shifts.length }}/{{ requestData.chosenLimit }} בקשות)
+										</div>
 										<div class="request-shifts">
-											<span v-if="requests.length === 0" class="available-badge"> זמין לכל המשמרות </span>
-											<span v-for="shift in requests" :key="shift" class="request-shift">
+											<span v-if="requestData.shifts.length === 0" class="available-badge"> זמין לכל המשמרות </span>
+											<span v-for="shift in requestData.shifts" :key="shift" class="request-shift">
 												{{ formatShiftForDisplay(shift) }}
 											</span>
 										</div>
@@ -692,10 +694,14 @@
 						try {
 							const savedData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
 							const weekData = savedData[this.weekKey] || {};
-							this.selectedShifts = weekData[this.selectedEmployee] || [];
+							// Retrieve the saved shifts and the chosen limit
+							const employeeRequest = weekData[this.selectedEmployee];
+							this.selectedShifts = employeeRequest ? employeeRequest.shifts : [];
+							this.selectedNoOfShiftsValue = employeeRequest ? employeeRequest.chosenLimit : 3; // Default to 3 if not found
 						} catch (error) {
 							console.error('Error loading employee data:', error);
 							this.selectedShifts = [];
+							this.selectedNoOfShiftsValue = 3; // Reset to default on error
 						}
 						this.updateCounter(); // Ensure counter is updated after loading
 					},
@@ -913,7 +919,11 @@
 								allRequests[weekKey] = {};
 							}
 
-							allRequests[weekKey][this.selectedEmployee] = [...this.selectedShifts];
+							// Store both the selected shifts and the chosen limit
+							allRequests[weekKey][this.selectedEmployee] = {
+								shifts: [...this.selectedShifts],
+								chosenLimit: this.selectedNoOfShiftsValue,
+							};
 							localStorage.setItem('employeeRequests', JSON.stringify(allRequests));
 						} catch (error) {
 							console.error('Error saving employee request:', error);
@@ -978,7 +988,8 @@
 
 							// Add employee data rows
 							this.employees.forEach(employee => {
-								const employeeShifts = weekRequests[employee] || [];
+								const requestData = weekRequests[employee];
+								const employeeShifts = requestData ? requestData.shifts : [];
 								csvContent += `${employee},`;
 
 								this.currentDeadlineWeek.forEach((date, dayIndex) => {
@@ -986,17 +997,16 @@
 									const nightId = `${dayIndex}-night`;
 
 									// Determine availability based on selected shifts and mode
-									let dayStatus, nightStatus;
-									// If employee selected 'צו פתוח', shifts in selectedShifts mean 'unavailable'
-									// If employee selected '1' or '2', shifts in selectedShifts mean 'desired'
 									// For export, we assume 'צו פתוח' is the primary mode for marking unavailable shifts.
 									// If you need to export based on 'desired' shifts, this logic needs adjustment.
-									if (this.isShiftSelectionMode === 'unavailable') {
-										// Assuming export is for 'unavailable' shifts
+									const isUnavailableModeForExport = requestData ? requestData.chosenLimit === 3 : true; // Assume unavailable if no specific limit was chosen
+
+									let dayStatus, nightStatus;
+									if (isUnavailableModeForExport) {
 										dayStatus = employeeShifts.includes(dayId) ? 'לא זמין' : 'זמין';
 										nightStatus = employeeShifts.includes(nightId) ? 'לא זמין' : 'זמין';
 									} else {
-										// For 'desired' shifts, inverse the logic for 'unavailable'
+										// For 'desired' shifts, inverse the logic for 'unavailable' in the export
 										dayStatus = employeeShifts.includes(dayId) ? 'זמין' : 'לא זמין';
 										nightStatus = employeeShifts.includes(nightId) ? 'זמין' : 'לא זמין';
 									}
@@ -1149,14 +1159,12 @@
 					},
 
 					/* --- UI State Management --- */
-
 					// Sets the loading state for buttons
 					setLoading(state) {
 						this.loading = state;
 					},
 
 					/* --- Custom Modal Functions --- */
-
 					// Displays a custom modal (alert or confirm)
 					async showCustomModal(message, type = 'alert') {
 						this.modalMessage = message;
