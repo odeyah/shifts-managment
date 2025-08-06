@@ -184,7 +184,7 @@
 			}
 
 			.form-title::before {
-				content: '👤';
+				content: '�';
 				font-size: 1.2rem;
 			}
 
@@ -988,14 +988,14 @@
 					},
 
 					// Loads all employee requests for the current week for manager view
+					// Now loads ALL requests from localStorage, grouped by week.
 					loadAllRequests() {
 						try {
-							// Load ALL requests from localStorage
 							this.allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
 							this.showRequests = true;
 						} catch (error) {
 							console.error('Error loading requests:', error);
-							this.allRequests = {};
+							this.allRequests = {}; // Reset to empty if there's an error
 							this.showRequests = true;
 						}
 					},
@@ -1007,8 +1007,8 @@
 						this.setLoading(true);
 
 						try {
-							const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-							const weekRequests = allRequests[this.weekKey] || {};
+							const allRequestsData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+							const weekRequests = allRequestsData[this.weekKey] || {};
 
 							let csvContent = 'שם,';
 
@@ -1031,8 +1031,6 @@
 									const nightId = `${dayIndex}-night`;
 
 									// Determine availability based on selected shifts and mode
-									// For export, we assume 'צו פתו0' is the primary mode for marking unavailable shifts.
-									// If you need to export based on 'desired' shifts, this logic needs adjustment.
 									const isUnavailableModeForExport = requestData ? requestData.chosenLimit === 3 : true; // Assume unavailable if no specific limit was chosen
 
 									let dayStatus, nightStatus;
@@ -1051,8 +1049,14 @@
 								csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
 							});
 
-							// Copy to clipboard
-							await navigator.clipboard.writeText(csvContent);
+							// Use a temporary textarea to copy to clipboard for broader compatibility
+							const tempTextArea = document.createElement('textarea');
+							tempTextArea.value = csvContent;
+							document.body.appendChild(tempTextArea);
+							tempTextArea.select();
+							document.execCommand('copy');
+							document.body.removeChild(tempTextArea);
+
 							await this.showCustomModal('הנתונים הועתקו ללוח! תוכלו כעת להדביק אותם בגוגל שיטס.', 'alert');
 						} catch (error) {
 							console.error('Export error:', error);
