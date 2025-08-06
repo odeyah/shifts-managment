@@ -543,7 +543,7 @@
 								<div v-else>
 									<div v-for="(requestData, employee) in allRequests" :key="employee" class="request-item">
 										<div class="request-employee">
-											{{ employee }} ({{ requestData.shifts.length }}/{{ requestData.chosenLimit }} בקשות)
+											{{ employee }} {{ getManagerDisplayLimitText(requestData.shifts.length, requestData.chosenLimit) }}
 										</div>
 										<div class="request-shifts">
 											<span v-if="requestData.shifts.length === 0" class="available-badge"> זמין לכל המשמרות </span>
@@ -997,7 +997,7 @@
 									const nightId = `${dayIndex}-night`;
 
 									// Determine availability based on selected shifts and mode
-									// For export, we assume 'צו פתוח' is the primary mode for marking unavailable shifts.
+									// For export, we assume 'צו פתו0' is the primary mode for marking unavailable shifts.
 									// If you need to export based on 'desired' shifts, this logic needs adjustment.
 									const isUnavailableModeForExport = requestData ? requestData.chosenLimit === 3 : true; // Assume unavailable if no specific limit was chosen
 
@@ -1158,7 +1158,17 @@
 						return `${hebrewDay} - ${shiftTypeHe}`;
 					},
 
+					// Helper to get the correct display text for manager view based on chosen limit
+					getManagerDisplayLimitText(shiftCount, chosenLimit) {
+						if (chosenLimit === 3) {
+							return `(${shiftCount}/${chosenLimit} משמרות לא זמינות)`;
+						} else {
+							return `(${shiftCount}/${chosenLimit} משמרות רצויות)`;
+						}
+					},
+
 					/* --- UI State Management --- */
+
 					// Sets the loading state for buttons
 					setLoading(state) {
 						this.loading = state;
