@@ -4,6 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>מערכת בקשות משמרות</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
 		<style>
 			* {
 				margin: 0;
@@ -12,11 +13,18 @@
 			}
 
 			body {
-				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Arial Hebrew', sans-serif;
 				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 				min-height: 100vh;
 				padding: 20px;
 				direction: rtl;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+
+			#app {
+				width: 100%;
 			}
 
 			.container {
@@ -82,6 +90,28 @@
 				box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
 			}
 
+			.manager-login {
+				background: linear-gradient(135deg, #74b9ff, #0984e3);
+				color: white;
+				border-radius: 10px;
+				padding: 15px;
+				margin-bottom: 20px;
+				text-align: center;
+			}
+
+			.manager-login input {
+				padding: 10px 15px;
+				border: 1px solid rgba(255, 255, 255, 0.3);
+				border-radius: 8px;
+				background: rgba(255, 255, 255, 0.1);
+				color: white;
+				margin: 0 10px;
+			}
+
+			.manager-login input::placeholder {
+				color: rgba(255, 255, 255, 0.7);
+			}
+
 			.btn {
 				background: linear-gradient(135deg, #00b894, #00a085);
 				color: white;
@@ -106,6 +136,14 @@
 				transform: none;
 			}
 
+			.btn-primary {
+				background: linear-gradient(135deg, #4facfe, #00f2fe);
+			}
+
+			.btn-primary:hover {
+				box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+			}
+
 			.btn-danger {
 				background: linear-gradient(135deg, #ff6b6b, #ee5a52);
 			}
@@ -119,16 +157,18 @@
 				border-radius: 12px;
 				padding: 25px;
 				margin-bottom: 25px;
-				display: none;
-				opacity: 0;
-				transform: translateY(20px);
-				transition: all 0.5s ease;
+				animation: fadeIn 0.5s ease;
 			}
 
-			.employee-form.show {
-				display: block;
-				opacity: 1;
-				transform: translateY(0);
+			@keyframes fadeIn {
+				from {
+					opacity: 0;
+					transform: translateY(20px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
 			}
 
 			.form-title {
@@ -137,6 +177,15 @@
 				color: #2c3e50;
 				margin-bottom: 20px;
 				text-align: center;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 10px;
+			}
+
+			.form-title::before {
+				content: '�';
+				font-size: 1.2rem;
 			}
 
 			.deadline-info {
@@ -258,6 +307,80 @@
 				margin-top: 30px;
 			}
 
+			.manager-panel {
+				background: #f8f9fa;
+				border-radius: 12px;
+				padding: 25px;
+				margin-top: 25px;
+				animation: fadeIn 0.5s ease;
+			}
+
+			.requests-list {
+				margin-top: 20px;
+			}
+
+			.request-item {
+				background: white;
+				border-radius: 8px;
+				padding: 15px;
+				margin-bottom: 10px;
+				border-right: 4px solid #4facfe;
+				transition: all 0.3s ease;
+			}
+
+			.request-item:hover {
+				transform: translateX(-5px);
+				box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+			}
+
+			.request-employee {
+				font-weight: 600;
+				color: #2c3e50;
+				margin-bottom: 8px;
+			}
+
+			.request-shifts {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.request-shift {
+				background: #ffebee;
+				color: #c62828;
+				padding: 4px 8px;
+				border-radius: 15px;
+				font-size: 0.85rem;
+				border: 1px solid #ffcdd2;
+			}
+
+			.available-badge {
+				background: #e8f5e8;
+				color: #2e7d32;
+				padding: 4px 8px;
+				border-radius: 15px;
+				font-size: 0.85rem;
+				border: 1px solid #c8e6c9;
+				font-weight: 600;
+			}
+
+			.empty-state {
+				text-align: center;
+				color: #6c757d;
+				font-style: italic;
+				padding: 30px;
+			}
+
+			.fade-enter-active,
+			.fade-leave-active {
+				transition: opacity 0.5s ease;
+			}
+
+			.fade-enter-from,
+			.fade-leave-to {
+				opacity: 0;
+			}
+
 			.loading {
 				display: inline-block;
 				width: 20px;
@@ -276,617 +399,778 @@
 					transform: rotate(360deg);
 				}
 			}
+
+			/* Custom Modal Styles */
+			.custom-modal-overlay {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: rgba(0, 0, 0, 0.6);
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				z-index: 1000;
+			}
+
+			.custom-modal {
+				background: white;
+				padding: 30px;
+				border-radius: 15px;
+				box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+				text-align: center;
+				max-width: 400px;
+				width: 90%;
+			}
+
+			.custom-modal p {
+				font-size: 1.1rem;
+				margin-bottom: 20px;
+				color: #333;
+			}
+
+			.custom-modal .modal-actions {
+				display: flex;
+				justify-content: center;
+				gap: 15px;
+			}
 		</style>
 	</head>
 	<body>
-		<div class="container">
-			<div class="header">
-				<h1>בקשות משמרות</h1>
-				<p>בחרו עד 3 משמרות שאתם לא יכולים להשתבץ בהם</p>
-			</div>
-
-			<div class="content">
-				<!-- Employee Selection -->
-				<div class="employee-selector">
-					<h3>בחרו את השם שלכם:</h3>
-					<select id="employeeSelect" class="employee-dropdown">
-						<option value="">-- בחרו שם --</option>
-						<option value="Employee1">יוסי כהן</option>
-						<option value="Employee2">רחל לוי</option>
-						<option value="Employee3">משה אברהם</option>
-						<option value="Employee4">שרה דוד</option>
-						<option value="Employee5">דני מלכה</option>
-						<option value="Employee6">מירי רוזן</option>
-						<option value="Employee7">אבי שמש</option>
-						<option value="Employee8">טלי ברון</option>
-						<option value="Employee9">נתן גולד</option>
-						<option value="Employee10">מיכל ברק</option>
-						<option value="Employee11">רון שחר</option>
-						<option value="Employee12">תמר נוי</option>
-					</select>
-					<select id="shiftsSelect" class="employee-dropdown">
-						<option value="">-- בחרו כמות משמרות --</option>
-						<option value="1">1</option>
-						<option value="2">2</option>
-						<option value="צו פתוח">צו פתוח</option>
-					</select>
+		<div id="app">
+			<div class="container">
+				<div class="header">
+					<h1>בקשות משמרות</h1>
+					<p>{{ instructionsText }}</p>
 				</div>
 
-				<!-- Deadline Info -->
-				<div class="deadline-info" id="deadlineInfo">טוען מידע על מועדים...</div>
-
-				<!-- Employee Form -->
-				<div id="employeeForm" class="employee-form">
-					<div class="form-title">👤 <span id="employeeName">שם עובד</span> - בחירת משמרות</div>
-
-					<div class="alert alert-info">
-						<strong>הוראות:</strong> בחרו עד 3 משמרות שאתם <strong>לא יכולים</strong> לעבוד בשבוע הרלוונטי
+				<div class="content">
+					<!-- Employee Selection -->
+					<div class="employee-selector">
+						<h3>בחרו את השם שלכם:</h3>
+						<select class="employee-dropdown" v-model="selectedEmployee" @change="handleEmployeeChange">
+							<option value="">-- בחרו שם --</option>
+							<option v-for="employee in employees" :key="employee" :value="employee">{{ employee }}</option>
+						</select>
+						<select class="employee-dropdown" v-model="selectedNoOfShiftsValue" @change="handleShiftModeChange">
+							<option value="">-- בחרו כמות משמרות --</option>
+							<option v-for="shiftOption in shiftsOptions" :key="shiftOption.value" :value="shiftOption.value">
+								{{ shiftOption.text }}
+							</option>
+						</select>
 					</div>
 
-					<div class="shifts-grid" id="shiftsGrid">
-						<!-- Shifts will be populated by JavaScript -->
+					<!-- Deadline Info -->
+					<div class="deadline-info">{{ deadlineInfo }}</div>
+
+					<!-- Employee Form -->
+					<transition name="fade">
+						<div v-if="selectedEmployee" class="employee-form">
+							<div class="form-title">{{ selectedEmployee }} - בחירת משמרות</div>
+
+							<div class="alert alert-info"><strong>הוראות:</strong> {{ instructionsText }}</div>
+
+							<div class="shifts-grid">
+								<div
+									v-for="(shift, index) in availableShifts"
+									:key="index"
+									class="shift-option"
+									:class="{
+                    selected: selectedShifts.includes(shift.id),
+                    disabled: !canToggleShift(shift.id) && !selectedShifts.includes(shift.id)
+                  }"
+									@click="toggleShift(shift.id)"
+								>
+									<div class="shift-date">{{ shift.dateStr }}</div>
+									<div class="shift-time">{{ shift.type }}</div>
+									<div v-if="selectedShifts.includes(shift.id)" class="unavailable-badge">✗</div>
+								</div>
+							</div>
+
+							<div
+								class="counter"
+								:class="{
+                  'warning': selectedShifts.length === maxShiftsAllowed - 1 && maxShiftsAllowed > 1,
+                  'limit-reached': selectedShifts.length === maxShiftsAllowed
+                }"
+							>
+								<span v-if="isShiftSelectionMode === 'unavailable'">
+									משמרות לא זמינות: {{ selectedShifts.length }}/{{ maxShiftsAllowed }}
+								</span>
+								<span v-else> משמרות רצויות: {{ selectedShifts.length }}/{{ maxShiftsAllowed }} </span>
+								<span v-if="selectedShifts.length === maxShiftsAllowed"> (הגעתם למגבלה)</span>
+							</div>
+
+							<div class="form-actions">
+								<button class="btn btn-success" @click="submitRequest" :disabled="loading">
+									<span v-if="loading" class="loading"></span>
+									{{ loading ? 'שולח...' : 'שליחת בקשה' }}
+								</button>
+								<button class="btn btn-danger" @click="clearSelections" :disabled="loading || selectedShifts.length === 0">
+									איפוס בחירות
+								</button>
+							</div>
+						</div>
+					</transition>
+
+					<!-- Manager Login -->
+					<div class="manager-login">
+						<strong>כניסת מנהלים:</strong>
+						<input
+							type="password"
+							v-model="managerPasswordInput"
+							placeholder="סיסמת מנהל"
+							@keyup.enter="checkManagerAccess"
+						/>
+						<button class="btn btn-primary" @click="checkManagerAccess" :disabled="!managerPasswordInput">כניסה</button>
+						<div v-if="isManager" style="margin-top: 10px; color: #00ff88">✓ מחובר כמנהל</div>
 					</div>
 
-					<div class="counter" id="counter">משמרות לא זמינות: 0/3</div>
+					<!-- Manager Panel -->
+					<transition name="fade">
+						<div v-if="isManager" class="manager-panel">
+							<h3>פאנל מנהלים</h3>
+							<div class="form-actions">
+								<button class="btn btn-primary" @click="loadAllRequests" :disabled="loading">צפייה בכל הבקשות</button>
+								<button class="btn" @click="exportAllRequests" :disabled="loading">ייצוא לגוגל שיטס</button>
+								<button class="btn btn-danger" @click="clearAllData" :disabled="loading">איפוס כל הנתונים</button>
+							</div>
 
-					<div class="form-actions">
-						<button class="btn btn-success" id="submitBtn">שליחת בקשה</button>
-						<button class="btn btn-danger" id="clearBtn">איפוס בחירות</button>
+							<div v-if="showRequests" class="requests-list">
+								<h4>בקשות לשבוע הרלוונטי:</h4>
+								<div v-if="Object.keys(allRequests).length === 0" class="empty-state">אין בקשות עדיין</div>
+								<div v-else>
+									<div v-for="(requests, employee) in allRequests" :key="employee" class="request-item">
+										<div class="request-employee">{{ employee }} ({{ requests.length }}/3 בקשות)</div>
+										<div class="request-shifts">
+											<span v-if="requests.length === 0" class="available-badge"> זמין לכל המשמרות </span>
+											<span v-for="shift in requests" :key="shift" class="request-shift">
+												{{ formatShiftForDisplay(shift) }}
+											</span>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</transition>
+				</div>
+			</div>
+
+			<!-- Custom Modal Component -->
+			<div v-if="showModal" class="custom-modal-overlay">
+				<div class="custom-modal">
+					<p>{{ modalMessage }}</p>
+					<div class="modal-actions">
+						<button v-if="modalType === 'confirm'" @click="modalResolve(true)" class="btn btn-success">כן</button>
+						<button v-if="modalType === 'confirm'" @click="modalResolve(false)" class="btn btn-danger">לא</button>
+						<button v-if="modalType === 'alert'" @click="modalResolve(true)" class="btn btn-primary">אישור</button>
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<script>
-			// Employee name mapping
-			const employeeNames = {
-				Employee1: 'יוסי כהן',
-				Employee2: 'רחל לוי',
-				Employee3: 'משה אברהם',
-				Employee4: 'שרה דוד',
-				Employee5: 'דני מלכה',
-				Employee6: 'מירי רוזן',
-				Employee7: 'אבי שמש',
-				Employee8: 'טלי ברון',
-				Employee9: 'נתן גולד',
-				Employee10: 'מיכל ברק',
-				Employee11: 'רון שחר',
-				Employee12: 'תמר נוי',
-			};
+			const { createApp } = Vue;
 
-			// Application state
-			let selectedEmployee = '';
-			let selectedShifts = [];
-			let currentDeadlineWeek = [];
-			let loading = false;
+			createApp({
+				data() {
+					return {
+						// Employee data
+						employees: [
+							'יוסי כהן',
+							'רחל לוי',
+							'משה אברהם',
+							'שרה דוד',
+							'דני מלכה',
+							'מירי רוזן',
+							'אבי שמש',
+							'טלי ברון',
+							'נתן גולד',
+							'מיכל ברק',
+							'רון שחר',
+							'תמר נוי',
+						],
+						// Options for the number of shifts dropdown
+						shiftsOptions: [
+							{ text: '1', value: 1, instructions: 'בחר בבקשה את המשמרת הרצויה' },
+							{ text: '2', value: 2, instructions: 'בחר בבקשה את 2 המשמרות שברצונך לעשות' },
+							{ text: 'צו פתוח', value: 3, instructions: 'בחר עד 3 משמרות שאת/ה לא יכולים להשתבץ בהם' },
+						],
+						selectedNoOfShiftsValue: 3, // Default to 'צו פתוח' (value 3)
 
-			const shortHebrewDays = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"];
+						// Hebrew days for display
+						shortHebrewDays: ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"],
 
-			// DOM elements
-			const employeeSelect = document.getElementById('employeeSelect');
-			const shiftsSelect = document.getElementById('shiftsSelect');
-			const employeeForm = document.getElementById('employeeForm');
-			const employeeName = document.getElementById('employeeName');
-			const shiftsGrid = document.getElementById('shiftsGrid');
-			const counter = document.getElementById('counter');
-			const submitBtn = document.getElementById('submitBtn');
-			const clearBtn = document.getElementById('clearBtn');
-			const deadlineInfo = document.getElementById('deadlineInfo');
-			const instructionsContent = document.getElementById('instructionsContent');
-			shiftsSelect.addEventListener('change', function () {
-				// Update instructions text
-				updateInstructions();
-				// Clear previous selections
-				selectedShifts = [];
-				// Update selected shift number
-				selectedShiftNumber = parseInt(shiftsSelect.value);
-				// Only proceed if an employee is selected
-				if (employeeSelect.value !== '') {
-					selectedEmployee = employeeSelect.value;
-					generateShiftsGrid();
-					updateCounter();
-				}
-			});
+						// Current state
+						selectedEmployee: '',
+						selectedShifts: [], // Stores shift IDs (e.g., '0-day', '1-night')
+						currentDeadlineWeek: [], // Array of Date objects for the current relevant week
 
-			// Initialize application
-			function init() {
-				updateDeadlineInfo();
-				setInterval(updateDeadlineInfo, 60000);
-				attachEventListeners();
-			}
+						// Manager related data
+						managerPasswordInput: '',
+						managerPassword: 'Aa321321', // IMPORTANT: Change this password in a real application!
+						isManager: false,
+						showRequests: false,
+						allRequests: {}, // Stores all employee requests from localStorage
 
-			// Attach event listeners
-			function attachEventListeners() {
-				employeeSelect.addEventListener('change', handleEmployeeChange);
-				submitBtn.addEventListener('click', submitRequest);
-				clearBtn.addEventListener('click', clearSelections);
-			}
+						// UI state
+						loading: false, // Controls loading spinner on buttons
+						deadlineInfo: '', // Text for the deadline display
+						instructionsText: 'בחרו עד 3 משמרות שאתם לא יכולים להשתבץ בהם', // Dynamic instructions
 
-			// Handle employee selection change
-			function handleEmployeeChange() {
-				selectedEmployee = employeeSelect.value;
+						// Custom Modal state
+						showModal: false,
+						modalMessage: '',
+						modalType: 'alert', // 'alert' or 'confirm'
+						modalResolve: null, // Function to resolve the modal promise
+					};
+				},
 
-				if (selectedEmployee && selectedShiftNumber > 0) {
-					generateShiftsGrid();
-					updateCounter();
-				}
-			}
+				computed: {
+					// Determines the maximum number of shifts allowed based on the selected mode
+					maxShiftsAllowed() {
+						return this.selectedNoOfShiftsValue;
+					},
 
-			// Load saved employee data
-			function loadEmployeeData() {
-				try {
-					const savedData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-					const weekKey = getWeekKey();
-					const weekData = savedData[weekKey] || {};
-					const displayName = employeeNames[selectedEmployee] || selectedEmployee;
-					selectedShifts = weekData[displayName] || [];
-					updateCounter();
-				} catch (error) {
-					console.error('Error loading employee data:', error);
-					selectedShifts = [];
-				}
-			}
+					// Determines if the current mode is selecting unavailable shifts ('צו פתוח')
+					// or desired shifts (1 or 2)
+					isShiftSelectionMode() {
+						return this.selectedNoOfShiftsValue === 3 ? 'unavailable' : 'desired';
+					},
 
-			// Generate shifts grid
-			function generateShiftsGrid() {
-				shiftsGrid.innerHTML = '';
+					// Generates an array of all possible shifts for the current deadline week
+					availableShifts() {
+						return this.currentDeadlineWeek.flatMap((date, dayIndex) => {
+							const hebrewDay = this.shortHebrewDays[dayIndex];
+							const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
 
-				currentDeadlineWeek.forEach((date, dayIndex) => {
-					const hebrewDay = shortHebrewDays[dayIndex];
-					const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
+							return [
+								{ id: `${dayIndex}-day`, dateStr, type: 'יום', dayIndex, shiftType: 'day' },
+								{ id: `${dayIndex}-night`, dateStr, type: 'לילה', dayIndex, shiftType: 'night' },
+							];
+						});
+					},
 
-					// Day shift
-					const dayShift = createShiftElement(`${dayIndex}-day`, dateStr, 'יום');
-					shiftsGrid.appendChild(dayShift);
+					// Generates a unique key for the current week, used for localStorage
+					weekKey() {
+						if (!this.currentDeadlineWeek || this.currentDeadlineWeek.length === 0) return 'current';
+						const firstDate = this.currentDeadlineWeek[0];
+						return `${firstDate.getFullYear()}-${firstDate.getMonth()}-${firstDate.getDate()}`;
+					},
+				},
 
-					// Night shift
-					const nightShift = createShiftElement(`${dayIndex}-night`, dateStr, 'לילה');
-					shiftsGrid.appendChild(nightShift);
-				});
-			}
+				mounted() {
+					// Initialize deadline info and set up interval for updates
+					this.updateDeadlineInfo();
+					setInterval(this.updateDeadlineInfo, 60000); // Update every minute
+					// Set initial instructions text
+					this.updateInstructionsText();
+				},
 
-			// Create shift element
-			function createShiftElement(shiftId, dateStr, shiftType) {
-				const shiftDiv = document.createElement('div');
-				shiftDiv.className = 'shift-option';
-				shiftDiv.dataset.shiftId = shiftId;
+				methods: {
+					/* --- Employee Selection & Shift Logic --- */
 
-				const isSelected = selectedShifts.includes(shiftId);
-				const selectedNoOfShifts = document.getElementById('shiftsSelect').value;
+					// Handles change in employee selection
+					handleEmployeeChange() {
+						this.loadEmployeeData(); // Load saved data for the selected employee
+					},
 
-				let maxShifts = 3; // default for "צו פתוח"
-				if (selectedNoOfShifts === '1') {
-					maxShifts = 1;
-				} else if (selectedNoOfShifts === '2') {
-					maxShifts = 2;
-				}
+					// Handles change in the number of shifts mode (1, 2, or 'צו פתוח')
+					handleShiftModeChange() {
+						this.selectedShifts = []; // Clear selections when mode changes
+						this.updateInstructionsText(); // Update instructions
+						this.updateCounter(); // Update counter display
+					},
 
-				const isDisabled =
-					(selectedShifts.length >= maxShifts && !isSelected) ||
-					(!isSelected && !isShiftSelectionValid(shiftId, selectedShifts));
-
-				if (isSelected) shiftDiv.classList.add('selected');
-				if (isDisabled) shiftDiv.classList.add('disabled');
-
-				shiftDiv.innerHTML = `
-			             <div class="shift-date">${dateStr}</div>
-			             <div class="shift-time">${shiftType}</div>
-			             ${isSelected ? '<div class="unavailable-badge">✗</div>' : ''}
-			         `;
-
-				shiftDiv.addEventListener('click', () => toggleShift(shiftId));
-
-				return shiftDiv;
-			}
-
-			// Check if shift selection is valid based on work rules
-			function isShiftSelectionValid(shiftId, currentSelections) {
-				const [dayIndex, shiftType] = shiftId.split('-');
-				const dayNum = parseInt(dayIndex);
-
-				// If no shifts selected yet, any shift is valid
-				if (currentSelections.length === 0) {
-					return true;
-				}
-
-				// Get selected number of shifts from dropdown
-				const selectedNoOfShifts = document.getElementById('shiftsSelect').value;
-
-				// If they selected "צו פתוח" (open order), normal 3-shift limit applies
-				if (selectedNoOfShifts === 'צו פתוח') {
-					return true;
-				}
-
-				// For 1 or 2 shifts, apply work rules
-				if (selectedNoOfShifts === '1' || selectedNoOfShifts === '2') {
-					// Check each currently selected shift
-					for (let selectedShift of currentSelections) {
-						const [selectedDayIndex, selectedShiftType] = selectedShift.split('-');
-						const selectedDayNum = parseInt(selectedDayIndex);
-
-						// Rule 1: Can't work day shift after night shift (24-hour rule)
-						if (selectedShiftType === 'night' && shiftType === 'day') {
-							// Check if trying to select day shift on the same day as night shift
-							if (selectedDayNum === dayNum) {
-								return false;
-							}
-							// Check if trying to select day shift on the day after night shift
-							if ((selectedDayNum + 1) % 7 === dayNum) {
-								return false;
-							}
-						}
-
-						// Rule 2: Can't work night shift before day shift (24-hour rule)
-						if (selectedShiftType === 'day' && shiftType === 'night') {
-							// Check if trying to select night shift on the same day as day shift
-							if (selectedDayNum === dayNum) {
-								return false;
-							}
-							// Check if trying to select night shift on the day before day shift
-							if ((dayNum + 1) % 7 === selectedDayNum) {
-								return false;
-							}
-						}
-
-						// Rule 3: Night shifts MUST be consecutive
-						if (selectedShiftType === 'night' && shiftType === 'night') {
-							// Check if consecutive nights (this is REQUIRED)
-							const isConsecutive =
-								Math.abs(selectedDayNum - dayNum) === 1 ||
-								(selectedDayNum === 6 && dayNum === 0) ||
-								(selectedDayNum === 0 && dayNum === 6);
-
-							if (!isConsecutive) {
-								return false; // Must be consecutive
-							}
-						}
-					}
-
-					// If we're trying to select a second shift and already have one, check the limit
-					if (selectedNoOfShifts === '1' && currentSelections.length >= 1) {
-						return false;
-					}
-					if (selectedNoOfShifts === '2' && currentSelections.length >= 2) {
-						return false;
-					}
-				}
-
-				return true;
-			}
-			function toggleShift(shiftId) {
-				const selectedNoOfShifts = document.getElementById('shiftsSelect').value;
-
-				let maxShifts = 3; // Default
-				if (selectedNoOfShifts === '1') {
-					maxShifts = 1;
-				} else if (selectedNoOfShifts === '2') {
-					maxShifts = 2;
-				}
-
-				const index = selectedShifts.indexOf(shiftId);
-
-				if (index > -1) {
-					// Deselect
-					selectedShifts.splice(index, 1);
-				} else {
-					// Only allow new selection if under limit and valid
-					if (selectedShifts.length < maxShifts && isShiftSelectionValid(shiftId, selectedShifts)) {
-						selectedShifts.push(shiftId);
-					}
-				}
-
-				generateShiftsGrid();
-				updateCounter();
-			}
-
-			// Update instructions text based on selected shifts
-			function updateInstructions() {
-				const selectedNoOfShifts = document.getElementById('shiftsSelect').value;
-
-				if (selectedNoOfShifts === '1') {
-					instructionsContent.textContent = 'בחר בבקשה את המשמרת הרצויה';
-				} else if (selectedNoOfShifts === '2') {
-					instructionsContent.textContent = 'בחר בבקשה את 2 המשמרות שברצונך לעשות';
-				} else if (selectedNoOfShifts === 'צו פתוח') {
-					instructionsContent.textContent = 'בחר עד 3 משמרות שאת/ה לא יכולים להשתבץ בהם';
-				} else {
-					instructionsContent.textContent = 'בחרו עד 3 משמרות שאתם לא יכולים להשתבץ בהם';
-				}
-			}
-			function updateCounter() {
-				const count = selectedShifts.length;
-				const selectedNoOfShifts = document.getElementById('shiftsSelect').value;
-
-				let maxShifts = 3; // default for "צו פתוח"
-				let counterText = `משמרות לא זמינות: ${count}/3`;
-
-				if (selectedNoOfShifts === '1') {
-					maxShifts = 1;
-					counterText = `משמרות לא זמינות: ${count}/1`;
-				} else if (selectedNoOfShifts === '2') {
-					maxShifts = 2;
-					counterText = `משמרות לא זמינות: ${count}/2`;
-				}
-
-				counter.textContent = counterText;
-
-				counter.className = 'counter';
-				if (count === maxShifts - 1 && maxShifts > 1) counter.classList.add('warning');
-				if (count === maxShifts) {
-					counter.classList.add('limit-reached');
-					counter.textContent += ' (הגעתם למגבלה)';
-				}
-			}
-
-			// Validate shift selection based on rules
-			function validateShiftSelection(numOfShifts, chosenShifts) {
-				// Check if "צו פתוח" (Open Order)
-				if (numOfShifts === 'צו פתוח') {
-					if (chosenShifts.length > 3) {
-						return { valid: false, message: `בחרתם ${chosenShifts.length} משמרות אך המקסימום הוא 3 משמרות` };
-					}
-					return { valid: true };
-				}
-
-				// Check if chose "1" shift
-				if (numOfShifts === '1') {
-					if (chosenShifts.length !== 1) {
-						return { valid: false, message: `בחרתם ${chosenShifts.length} משמרות אך צריך לבחור בדיוק 1 משמרת` };
-					}
-					return { valid: true };
-				}
-
-				// Check if chose "2" shifts
-				if (numOfShifts === '2') {
-					if (chosenShifts.length !== 2) {
-						return { valid: false, message: `בחרתם ${chosenShifts.length} משמרות אך צריך לבחור בדיוק 2 משמרות` };
-					}
-
-					// Parse the shifts
-					const shifts = chosenShifts.map(shiftId => {
-						const [dayIndex, shiftType] = shiftId.split('-');
-						return {
-							dayNum: parseInt(dayIndex),
-							shiftType: shiftType,
-							dayName: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'][parseInt(dayIndex)],
-						};
-					});
-
-					const nightShifts = shifts.filter(s => s.shiftType === 'night');
-					const dayShifts = shifts.filter(s => s.shiftType === 'day');
-
-					// Check for consecutive day and night (24-hour rule)
-					for (let nightShift of nightShifts) {
-						for (let dayShift of dayShifts) {
-							// Same day - day and night
-							if (nightShift.dayNum === dayShift.dayNum) {
-								return {
-									valid: false,
-									message: `לא ניתן לעבוד יום ולילה באותו יום (${nightShift.dayName}) - עבודה של 24 שעות אסורה`,
-								};
-							}
-
-							// Day after night
-							if ((nightShift.dayNum + 1) % 7 === dayShift.dayNum) {
-								return {
-									valid: false,
-									message: `לא ניתן לעבוד יום ביום ${dayShift.dayName} אחרי לילה ביום ${nightShift.dayName} - עבודה של 24 שעות אסורה`,
-								};
-							}
-
-							// Night before day
-							if ((dayShift.dayNum + 1) % 7 === nightShift.dayNum) {
-								return {
-									valid: false,
-									message: `לא ניתן לעבוד לילה ביום ${nightShift.dayName} לפני יום ביום ${dayShift.dayName} - עבודה של 24 שעות אסורה`,
-								};
-							}
-						}
-					}
-
-					// Check for non-consecutive nights
-					if (nightShifts.length === 2) {
-						const night1 = nightShifts[0];
-						const night2 = nightShifts[1];
-
-						// Check if consecutive
-						const isConsecutive =
-							Math.abs(night1.dayNum - night2.dayNum) === 1 ||
-							(night1.dayNum === 6 && night2.dayNum === 0) ||
-							(night1.dayNum === 0 && night2.dayNum === 6);
-
-						if (!isConsecutive) {
-							return {
-								valid: false,
-								message: `משמרות לילה חייבות להיות רצופות. בחרתם לילה ביום ${night1.dayName} ולילה ביום ${night2.dayName} - אלו לא רצופות`,
-							};
-						}
-					}
-
-					return { valid: true };
-				}
-
-				// If numOfShifts is not recognized
-				return { valid: false, message: 'אנא בחרו כמות משמרות מהרשימה הנפתחת' };
-			}
-			async function submitRequest() {
-				if (!selectedEmployee) {
-					alert('אנא בחרו שם קודם');
-					return;
-				}
-
-				const selectedNoOfShifts = document.getElementById('shiftsSelect').value;
-
-				// Run validation BEFORE submitting
-				const validation = validateShiftSelection(selectedNoOfShifts, selectedShifts);
-				if (!validation.valid) {
-					alert(validation.message);
-					return;
-				}
-
-				setLoading(true);
-
-				try {
-					await new Promise(resolve => setTimeout(resolve, 1000));
-
-					if (selectedShifts.length === 0) {
-						const confirmed = confirm('לא בחרתם משמרות לא זמינות. האם אתם זמינים לכל המשמרות?');
-						if (!confirmed) {
-							setLoading(false);
+					// Loads employee's previously saved shift requests from localStorage
+					loadEmployeeData() {
+						if (!this.selectedEmployee) {
+							this.selectedShifts = [];
 							return;
 						}
-					}
+						try {
+							const savedData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+							const weekData = savedData[this.weekKey] || {};
+							this.selectedShifts = weekData[this.selectedEmployee] || [];
+						} catch (error) {
+							console.error('Error loading employee data:', error);
+							this.selectedShifts = [];
+						}
+						this.updateCounter(); // Ensure counter is updated after loading
+					},
 
-					saveEmployeeRequest();
+					// Toggles the selection of a shift
+					toggleShift(shiftId) {
+						const index = this.selectedShifts.indexOf(shiftId);
 
-					const message =
-						selectedShifts.length === 0
-							? 'הבקשה נשלחה בהצלחה! אתם זמינים לכל המשמרות.'
-							: `הבקשה נשלחה בהצלחה! בחרתם ${selectedShifts.length} משמרות שאתם לא זמינים אליהן.`;
+						if (index > -1) {
+							// If already selected, deselect it
+							this.selectedShifts.splice(index, 1);
+						} else {
+							// If not selected, check if it can be added based on rules and limit
+							if (this.selectedShifts.length < this.maxShiftsAllowed && this.canToggleShift(shiftId)) {
+								this.selectedShifts.push(shiftId);
+							} else if (this.selectedShifts.length >= this.maxShiftsAllowed) {
+								// Provide feedback if limit is reached
+								this.showCustomModal(`הגעתם למגבלה של ${this.maxShiftsAllowed} משמרות.`, 'alert');
+							} else {
+								// Provide feedback if a rule is violated (e.g., 24-hour rule)
+								this.showCustomModal(
+									'בחירה זו מפרה את חוקי העבודה (לדוגמה: חוק 24 שעות או משמרות לילה לא רצופות).',
+									'alert',
+								);
+							}
+						}
+						this.updateCounter(); // Update counter after every toggle
+					},
 
-					alert(message);
-				} finally {
-					setLoading(false);
-				}
-			}
+					// Determines if a new shift can be added based on the current selection mode and rules
+					canToggleShift(newShiftId) {
+						// If in 'צו פתוח' mode, no complex rules apply, just the count limit
+						if (this.isShiftSelectionMode === 'unavailable') {
+							return true;
+						}
 
-			// Save employee request
-			function saveEmployeeRequest() {
-				try {
-					const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-					const weekKey = getWeekKey();
-					const displayName = employeeNames[selectedEmployee] || selectedEmployee;
+						// For '1' or '2' shifts (desired shifts), apply complex rules
+						const [newDayIndex, newShiftType] = newShiftId.split('-');
+						const newDayNum = parseInt(newDayIndex);
 
-					if (!allRequests[weekKey]) {
-						allRequests[weekKey] = {};
-					}
+						for (const existingShiftId of this.selectedShifts) {
+							const [existingDayIndex, existingShiftType] = existingShiftId.split('-');
+							const existingDayNum = parseInt(existingDayIndex);
 
-					allRequests[weekKey][displayName] = [...selectedShifts];
-					localStorage.setItem('employeeRequests', JSON.stringify(allRequests));
-				} catch (error) {
-					console.error('Error saving employee request:', error);
-					alert('שגיאה בשמירת הבקשה');
-				}
-			}
+							// Rule 1: Cannot work day after night (24-hour rule)
+							// Check if existing is night and new is day on same or next day
+							if (existingShiftType === 'night' && newShiftType === 'day') {
+								if (existingDayNum === newDayNum || (existingDayNum + 1) % 7 === newDayNum) {
+									return false; // Violation
+								}
+							}
+							// Check if existing is day and new is night on same or previous day
+							if (existingShiftType === 'day' && newShiftType === 'night') {
+								if (existingDayNum === newDayNum || (newDayNum + 1) % 7 === existingDayNum) {
+									return false; // Violation
+								}
+							}
 
-			// Clear selections
-			function clearSelections() {
-				if (confirm('האם אתם בטוחים שאתם רוצים לאפס את הבחירות?')) {
-					selectedShifts = [];
-					generateShiftsGrid();
-					updateCounter();
-				}
-			}
+							// Rule 2: Night shifts MUST be consecutive if selecting 2 nights
+							if (this.maxShiftsAllowed === 2 && newShiftType === 'night' && existingShiftType === 'night') {
+								const isConsecutive =
+									Math.abs(newDayNum - existingDayNum) === 1 ||
+									(newDayNum === 6 && existingDayNum === 0) || // Sat (6) -> Sun (0)
+									(newDayNum === 0 && existingDayNum === 6); // Sun (0) -> Sat (6) (for cases where existing is Sat)
 
-			// Set loading state
-			function setLoading(state) {
-				loading = state;
-				submitBtn.disabled = state;
-				clearBtn.disabled = state || selectedShifts.length === 0;
+								if (!isConsecutive) {
+									return false; // Non-consecutive nights are not allowed
+								}
+							}
+						}
+						return true; // No violations found
+					},
 
-				if (state) {
-					submitBtn.innerHTML = '<span class="loading"></span> שולח...';
-				} else {
-					submitBtn.innerHTML = 'שליחת בקשה';
-				}
-			}
+					// Updates the instructions text based on the selected number of shifts
+					updateInstructionsText() {
+						const selectedOption = this.shiftsOptions.find(option => option.value === this.selectedNoOfShiftsValue);
+						this.instructionsText = selectedOption
+							? selectedOption.instructions
+							: 'בחרו עד 3 משמרות שאתם לא יכולים להשתבץ בהם';
+					},
 
-			// Date utilities
-			function updateDeadlineInfo() {
-				try {
-					const now = new Date();
-					const currentDay = now.getDay();
-					const currentHour = now.getHours();
+					// Updates the counter display for selected shifts
+					updateCounter() {
+						const count = this.selectedShifts.length;
+						this.counterText = ''; // Reset for dynamic update
 
-					const passedDeadline = currentDay > 3 || (currentDay === 3 && currentHour >= 10);
+						if (this.isShiftSelectionMode === 'unavailable') {
+							this.counterText = `משמרות לא זמינות: ${count}/${this.maxShiftsAllowed}`;
+						} else {
+							this.counterText = `משמרות רצויות: ${count}/${this.maxShiftsAllowed}`;
+						}
 
-					let targetWeek;
-					let deadlineDate;
+						if (count === this.maxShiftsAllowed) {
+							this.counterText += ' (הגעתם למגבלה)';
+						}
+					},
 
-					if (passedDeadline) {
-						targetWeek = getWeekAfterNext();
-						deadlineDate = getNextWednesday();
-					} else {
-						targetWeek = getNextWeekDates();
-						deadlineDate = getThisWednesday();
-					}
+					// Submits the employee's shift request
+					async submitRequest() {
+						if (!this.selectedEmployee) {
+							await this.showCustomModal('אנא בחרו שם קודם', 'alert');
+							return;
+						}
 
-					currentDeadlineWeek = targetWeek;
+						// Perform final validation before submission
+						const validation = this.validateSubmission();
+						if (!validation.valid) {
+							await this.showCustomModal(validation.message, 'alert');
+							return;
+						}
 
-					const timeLeft = deadlineDate.getTime() - now.getTime();
-					const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-					const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+						this.setLoading(true); // Show loading spinner
 
-					if (timeLeft > 0) {
-						const weekType = passedDeadline ? 'השבוע שאחרי הבא' : 'השבוע הבא';
-						deadlineInfo.textContent = `⏰ בקשות עבור ${weekType} | מועד אחרון: ${deadlineDate.toLocaleDateString(
-							'he-IL',
-						)} בשעה 10:00 (נותרו ${daysLeft} ימים ו-${hoursLeft} שעות)`;
-					} else {
-						deadlineInfo.textContent = `⏰ המועד אחרון עבר - בקשות חדשות הן עבור השבוع שאחרי הבא`;
-					}
+						try {
+							// Simulate async operation
+							await new Promise(resolve => setTimeout(resolve, 1000));
 
-					if (selectedEmployee) {
-						generateShiftsGrid();
-					}
-				} catch (error) {
-					console.error('Error updating deadline info:', error);
-					deadlineInfo.textContent = 'טוען מידע על מועדים...';
-				}
-			}
+							// Special confirmation for zero selected shifts in 'צו פתוח' mode
+							if (this.selectedShifts.length === 0 && this.isShiftSelectionMode === 'unavailable') {
+								const confirmed = await this.showCustomModal(
+									'לא בחרתם משמרות לא זמינות. האם אתם זמינים לכל המשמרות?',
+									'confirm',
+								);
+								if (!confirmed) {
+									this.setLoading(false);
+									return;
+								}
+							}
 
-			function getNextWeekDates() {
-				const today = new Date();
-				const nextSunday = new Date(today);
-				nextSunday.setDate(today.getDate() + (7 - today.getDay()));
+							this.saveEmployeeRequest(); // Save the request
 
-				const dates = [];
-				for (let i = 0; i < 7; i++) {
-					const date = new Date(nextSunday);
-					date.setDate(nextSunday.getDate() + i);
-					dates.push(date);
-				}
-				return dates;
-			}
+							const message =
+								this.selectedShifts.length === 0 && this.isShiftSelectionMode === 'unavailable'
+									? 'הבקשה נשלחה בהצלחה! אתם זמינים לכל המשמרות.'
+									: `הבקשה נשלחה בהצלחה! בחרתם ${this.selectedShifts.length} משמרות.`;
 
-			function getWeekAfterNext() {
-				const today = new Date();
-				const weekAfterNextSunday = new Date(today);
-				weekAfterNextSunday.setDate(today.getDate() + (14 - today.getDay()));
+							await this.showCustomModal(message, 'alert');
+						} finally {
+							this.setLoading(false); // Hide loading spinner
+						}
+					},
 
-				const dates = [];
-				for (let i = 0; i < 7; i++) {
-					const date = new Date(weekAfterNextSunday);
-					date.setDate(weekAfterNextSunday.getDate() + i);
-					dates.push(date);
-				}
-				return dates;
-			}
+					// Performs final validation of selected shifts based on the chosen mode
+					validateSubmission() {
+						const numShiftsChosen = this.selectedShifts.length;
+						const selectedMode = this.selectedNoOfShiftsValue;
 
-			function getThisWednesday() {
-				const today = new Date();
-				const wednesday = new Date(today);
-				const daysUntilWednesday = (3 - today.getDay() + 7) % 7;
-				wednesday.setDate(today.getDate() + daysUntilWednesday);
-				wednesday.setHours(10, 0, 0, 0);
-				return wednesday;
-			}
+						if (selectedMode === 1) {
+							if (numShiftsChosen !== 1) {
+								return { valid: false, message: `בחרתם ${numShiftsChosen} משמרות אך צריך לבחור בדיוק 1 משמרת.` };
+							}
+						} else if (selectedMode === 2) {
+							if (numShiftsChosen !== 2) {
+								return { valid: false, message: `בחרתם ${numShiftsChosen} משמרות אך צריך לבחור בדיוק 2 משמרות.` };
+							}
 
-			function getNextWednesday() {
-				const thisWednesday = getThisWednesday();
-				const nextWednesday = new Date(thisWednesday);
-				nextWednesday.setDate(thisWednesday.getDate() + 7);
-				return nextWednesday;
-			}
+							// Detailed rules re-check for 2 shifts
+							const shifts = this.selectedShifts
+								.map(shiftId => {
+									const [dayIndex, shiftType] = shiftId.split('-');
+									return { dayNum: parseInt(dayIndex), shiftType: shiftType };
+								})
+								.sort((a, b) => a.dayNum - b.dayNum); // Sort by day for easier consecutive checks
 
-			function getWeekKey() {
-				if (!currentDeadlineWeek || currentDeadlineWeek.length === 0) return 'current';
-				const firstDate = currentDeadlineWeek[0];
-				return `${firstDate.getFullYear()}-${firstDate.getMonth()}-${firstDate.getDate()}`;
-			}
+							if (shifts.length === 2) {
+								const [shift1, shift2] = shifts;
 
-			// Initialize when page loads
-			window.addEventListener('load', init);
+								// Check 24-hour rule for the final pair
+								// Day after night (shift1 is night, shift2 is day)
+								if (shift1.shiftType === 'night' && shift2.shiftType === 'day') {
+									if (shift1.dayNum === shift2.dayNum || (shift1.dayNum + 1) % 7 === shift2.dayNum) {
+										return { valid: false, message: 'לא ניתן לעבוד יום אחרי לילה (חוק 24 שעות).' };
+									}
+								}
+								// Night after day (shift1 is day, shift2 is night)
+								if (shift1.shiftType === 'day' && shift2.shiftType === 'night') {
+									// Check if shift2 (night) is on the same day as shift1 (day)
+									// or if shift2 (night) is on the day immediately preceding shift1 (day)
+									if (shift1.dayNum === shift2.dayNum || (shift2.dayNum + 1) % 7 === shift1.dayNum) {
+										return { valid: false, message: 'לא ניתן לעבוד לילה לפני יום (חוק 24 שעות).' };
+									}
+								}
+
+								// Check consecutive nights if both are nights
+								if (shift1.shiftType === 'night' && shift2.shiftType === 'night') {
+									const isConsecutive =
+										Math.abs(shift1.dayNum - shift2.dayNum) === 1 ||
+										(shift1.dayNum === 6 && shift2.dayNum === 0) || // Sat-Sun
+										(shift1.dayNum === 0 && shift2.dayNum === 6); // Sun-Sat
+
+									if (!isConsecutive) {
+										return { valid: false, message: 'משמרות לילה חייבות להיות רצופות.' };
+									}
+								}
+							}
+						} else if (selectedMode === 3) {
+							// 'צו פתוח'
+							if (numShiftsChosen > 3) {
+								return { valid: false, message: `בחרתם ${numShiftsChosen} משמרות אך המקסימום הוא 3 משמרות.` };
+							}
+						} else {
+							return { valid: false, message: 'אנא בחרו כמות משמרות מהרשימה הנפתחת.' };
+						}
+
+						return { valid: true };
+					},
+
+					// Saves the current employee's request to localStorage
+					saveEmployeeRequest() {
+						try {
+							const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+							const weekKey = this.weekKey;
+
+							if (!allRequests[weekKey]) {
+								allRequests[weekKey] = {};
+							}
+
+							allRequests[weekKey][this.selectedEmployee] = [...this.selectedShifts];
+							localStorage.setItem('employeeRequests', JSON.stringify(allRequests));
+						} catch (error) {
+							console.error('Error saving employee request:', error);
+							this.showCustomModal('שגיאה בשמירת הבקשה', 'alert');
+						}
+					},
+
+					// Clears the current employee's shift selections
+					async clearSelections() {
+						const confirmed = await this.showCustomModal('האם אתם בטוחים שאתם רוצים לאפס את הבחירות?', 'confirm');
+						if (confirmed) {
+							this.selectedShifts = [];
+							this.updateCounter();
+						}
+					},
+
+					/* --- Manager Panel Logic --- */
+
+					// Checks the manager password for access
+					async checkManagerAccess() {
+						if (this.managerPasswordInput === this.managerPassword) {
+							this.isManager = true;
+							await this.showCustomModal('התחברת בהצלחה כמנהל!', 'alert');
+						} else if (this.managerPasswordInput) {
+							await this.showCustomModal('סיסמה שגויה', 'alert');
+							this.managerPasswordInput = ''; // Clear password input on wrong attempt
+						}
+					},
+
+					// Loads all employee requests for the current week for manager view
+					loadAllRequests() {
+						try {
+							const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+							this.allRequests = allRequests[this.weekKey] || {};
+							this.showRequests = true;
+						} catch (error) {
+							console.error('Error loading requests:', error);
+							this.allRequests = {};
+							this.showRequests = true;
+						}
+					},
+
+					// Exports all requests to CSV format and copies to clipboard
+					async exportAllRequests() {
+						if (!this.isManager) return;
+
+						this.setLoading(true);
+
+						try {
+							const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+							const weekRequests = allRequests[this.weekKey] || {};
+
+							let csvContent = 'שם,';
+
+							// Create headers for shifts (Day/Night for each day of the week)
+							this.currentDeadlineWeek.forEach((date, index) => {
+								const hebrewDay = this.shortHebrewDays[index];
+								const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
+								csvContent += `${dateStr} יום,${dateStr} לילה,`;
+							});
+							csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
+
+							// Add employee data rows
+							this.employees.forEach(employee => {
+								const employeeShifts = weekRequests[employee] || [];
+								csvContent += `${employee},`;
+
+								this.currentDeadlineWeek.forEach((date, dayIndex) => {
+									const dayId = `${dayIndex}-day`;
+									const nightId = `${dayIndex}-night`;
+
+									// Determine availability based on selected shifts and mode
+									let dayStatus, nightStatus;
+									// If employee selected 'צו פתוח', shifts in selectedShifts mean 'unavailable'
+									// If employee selected '1' or '2', shifts in selectedShifts mean 'desired'
+									// For export, we assume 'צו פתוח' is the primary mode for marking unavailable shifts.
+									// If you need to export based on 'desired' shifts, this logic needs adjustment.
+									if (this.isShiftSelectionMode === 'unavailable') {
+										// Assuming export is for 'unavailable' shifts
+										dayStatus = employeeShifts.includes(dayId) ? 'לא זמין' : 'זמין';
+										nightStatus = employeeShifts.includes(nightId) ? 'לא זמין' : 'זמין';
+									} else {
+										// For 'desired' shifts, inverse the logic for 'unavailable'
+										dayStatus = employeeShifts.includes(dayId) ? 'זמין' : 'לא זמין';
+										nightStatus = employeeShifts.includes(nightId) ? 'זמין' : 'לא זמין';
+									}
+
+									csvContent += `${dayStatus},${nightStatus},`;
+								});
+
+								csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
+							});
+
+							// Copy to clipboard
+							await navigator.clipboard.writeText(csvContent);
+							await this.showCustomModal('הנתונים הועתקו ללוח! תוכלו כעת להדביק אותם בגוגל שיטס.', 'alert');
+						} catch (error) {
+							console.error('Export error:', error);
+							await this.showCustomModal('שגיאה בייצוא הנתונים', 'alert');
+						} finally {
+							this.setLoading(false);
+						}
+					},
+
+					// Clears all data from localStorage (DANGEROUS OPERATION)
+					async clearAllData() {
+						if (!this.isManager) return;
+
+						const confirmed = await this.showCustomModal(
+							'האם אתם בטוחים שאתם רוצים לאפס את כל הנתונים? פעולה זו בלתי הפיכה!',
+							'confirm',
+						);
+						if (confirmed) {
+							try {
+								localStorage.removeItem('employeeRequests');
+								this.allRequests = {};
+								this.showRequests = false;
+								await this.showCustomModal('כל הנתונים נמחקו בהצלחה!', 'alert');
+							} catch (error) {
+								console.error('Error clearing data:', error);
+								await this.showCustomModal('שגיאה במחיקת הנתונים', 'alert');
+							}
+						}
+					},
+
+					/* --- Date & Time Utilities --- */
+
+					// Updates the deadline information displayed to the user
+					updateDeadlineInfo() {
+						try {
+							const now = new Date();
+							const currentDay = now.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+							const currentHour = now.getHours();
+
+							// Deadline is Wednesday 10:00 AM
+							const passedDeadline = currentDay > 3 || (currentDay === 3 && currentHour >= 10);
+
+							let targetWeek;
+							let deadlineDate;
+
+							if (passedDeadline) {
+								targetWeek = this.getWeekAfterNext();
+								deadlineDate = this.getNextWednesday();
+							} else {
+								targetWeek = this.getNextWeekDates();
+								deadlineDate = this.getThisWednesday();
+							}
+
+							this.currentDeadlineWeek = targetWeek;
+
+							const timeLeft = deadlineDate.getTime() - now.getTime();
+							const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+							const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+							if (timeLeft > 0) {
+								const weekType = passedDeadline ? 'השבוע שאחרי הבא' : 'השבוע הבא';
+								this.deadlineInfo = `⏰ בקשות עבור ${weekType} | מועד אחרון: ${deadlineDate.toLocaleDateString(
+									'he-IL',
+								)} בשעה 10:00 (נותרו ${daysLeft} ימים ו-${hoursLeft} שעות)`;
+							} else {
+								this.deadlineInfo = `⏰ המועד אחרון עבר - בקשות חדשות הן עבור השבוע שאחרי הבא`;
+							}
+
+							// Reload employee data if an employee is already selected,
+							// to reflect changes in the current week
+							if (this.selectedEmployee) {
+								this.loadEmployeeData();
+							}
+						} catch (error) {
+							console.error('Error updating deadline info:', error);
+							this.deadlineInfo = 'טוען מידע על מועדים...';
+						}
+					},
+
+					// Gets the dates for the next week (Sunday to Saturday)
+					getNextWeekDates() {
+						const today = new Date();
+						const nextSunday = new Date(today);
+						// Set to next Sunday (day 0)
+						nextSunday.setDate(today.getDate() + (7 - today.getDay()));
+						nextSunday.setHours(0, 0, 0, 0); // Normalize to start of day
+
+						const dates = [];
+						for (let i = 0; i < 7; i++) {
+							const date = new Date(nextSunday);
+							date.setDate(nextSunday.getDate() + i);
+							dates.push(date);
+						}
+						return dates;
+					},
+
+					// Gets the dates for the week after next (Sunday to Saturday)
+					getWeekAfterNext() {
+						const today = new Date();
+						const weekAfterNextSunday = new Date(today);
+						// Set to Sunday of the week after next
+						weekAfterNextSunday.setDate(today.getDate() + (14 - today.getDay()));
+						weekAfterNextSunday.setHours(0, 0, 0, 0); // Normalize to start of day
+
+						const dates = [];
+						for (let i = 0; i < 7; i++) {
+							const date = new Date(weekAfterNextSunday);
+							date.setDate(weekAfterNextSunday.getDate() + i);
+							dates.push(date);
+						}
+						return dates;
+					},
+
+					// Gets the date for the upcoming Wednesday at 10:00 AM in the current week
+					getThisWednesday() {
+						const today = new Date();
+						const wednesday = new Date(today);
+						const daysUntilWednesday = (3 - today.getDay() + 7) % 7; // Calculate days until Wednesday (day 3)
+						wednesday.setDate(today.getDate() + daysUntilWednesday);
+						wednesday.setHours(10, 0, 0, 0); // Set time to 10:00 AM
+						return wednesday;
+					},
+
+					// Gets the date for the Wednesday of the next week at 10:00 AM
+					getNextWednesday() {
+						const thisWednesday = this.getThisWednesday();
+						const nextWednesday = new Date(thisWednesday);
+						nextWednesday.setDate(thisWednesday.getDate() + 7); // Add 7 days to get next Wednesday
+						return nextWednesday;
+					},
+
+					// Formats a shift ID for display (e.g., "א' - יום")
+					formatShiftForDisplay(shiftId) {
+						const [dayIndex, shiftType] = shiftId.split('-');
+						const hebrewDay = this.shortHebrewDays[parseInt(dayIndex)];
+						const shiftTypeHe = shiftType === 'day' ? 'יום' : 'לילה';
+						return `${hebrewDay} - ${shiftTypeHe}`;
+					},
+
+					/* --- UI State Management --- */
+
+					// Sets the loading state for buttons
+					setLoading(state) {
+						this.loading = state;
+					},
+
+					/* --- Custom Modal Functions --- */
+
+					// Displays a custom modal (alert or confirm)
+					async showCustomModal(message, type = 'alert') {
+						this.modalMessage = message;
+						this.modalType = type;
+						this.showModal = true;
+						return new Promise(resolve => {
+							this.modalResolve = result => {
+								this.showModal = false;
+								resolve(result);
+							};
+						});
+					},
+				},
+			}).mount('#app');
 		</script>
 	</body>
 </html>
