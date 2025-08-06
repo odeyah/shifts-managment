@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 	<head>
 		<meta charset="UTF-8" />
@@ -372,6 +373,18 @@
 			const clearBtn = document.getElementById('clearBtn');
 			const deadlineInfo = document.getElementById('deadlineInfo');
 			const instructionsContent = document.getElementById('instructionsContent');
+			shiftsSelect.addEventListener('change', function () {
+				// Update instructions text
+				updateInstructions();
+
+				// Clear selections when shift number changes
+				selectedShifts = [];
+
+				if (selectedEmployee) {
+					generateShiftsGrid();
+					updateCounter();
+				}
+			});
 
 			// Initialize application
 			function init() {
@@ -461,10 +474,10 @@
 				if (isDisabled) shiftDiv.classList.add('disabled');
 
 				shiftDiv.innerHTML = `
-                <div class="shift-date">${dateStr}</div>
-                <div class="shift-time">${shiftType}</div>
-                ${isSelected ? '<div class="unavailable-badge">✗</div>' : ''}
-            `;
+			             <div class="shift-date">${dateStr}</div>
+			             <div class="shift-time">${shiftType}</div>
+			             ${isSelected ? '<div class="unavailable-badge">✗</div>' : ''}
+			         `;
 
 				shiftDiv.addEventListener('click', () => toggleShift(shiftId));
 
