@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>מערכת בקשות משמרות</title>
+		<title>מערכת בקשות משמרות - עובד</title>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
 		<style>
 			* {
@@ -90,28 +90,6 @@
 				box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
 			}
 
-			.manager-login {
-				background: linear-gradient(135deg, #74b9ff, #0984e3);
-				color: white;
-				border-radius: 10px;
-				padding: 15px;
-				margin-bottom: 20px;
-				text-align: center;
-			}
-
-			.manager-login input {
-				padding: 10px 15px;
-				border: 1px solid rgba(255, 255, 255, 0.3);
-				border-radius: 8px;
-				background: rgba(255, 255, 255, 0.1);
-				color: white;
-				margin: 0 10px;
-			}
-
-			.manager-login input::placeholder {
-				color: rgba(255, 255, 255, 0.7);
-			}
-
 			.btn {
 				background: linear-gradient(135deg, #00b894, #00a085);
 				color: white;
@@ -184,7 +162,7 @@
 			}
 
 			.form-title::before {
-				content: '👤';
+				content: '�';
 				font-size: 1.2rem;
 			}
 
@@ -307,122 +285,6 @@
 				margin-top: 30px;
 			}
 
-			.manager-panel {
-				background: #f8f9fa;
-				border-radius: 12px;
-				padding: 25px;
-				margin-top: 25px;
-				animation: fadeIn 0.5s ease;
-			}
-
-			.requests-list {
-				margin-top: 20px;
-			}
-
-			.week-section {
-				margin-bottom: 30px;
-				padding: 15px;
-				border-radius: 10px;
-				background-color: #e9f5ff; /* Light blue background for week sections */
-				border: 1px solid #cce7ff;
-			}
-
-			.week-section h5 {
-				font-size: 1.2rem;
-				margin-bottom: 15px;
-				color: #004085;
-				text-align: center;
-			}
-
-			.request-item {
-				background: white;
-				border-radius: 8px;
-				padding: 15px;
-				margin-bottom: 10px;
-				border-right: 4px solid #4facfe;
-				transition: all 0.3s ease;
-			}
-
-			.request-item:hover {
-				transform: translateX(-5px);
-				box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-			}
-
-			.request-employee {
-				font-weight: 600;
-				color: #2c3e50;
-				margin-bottom: 8px;
-			}
-
-			.request-shifts {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 8px;
-			}
-
-			.request-shift {
-				background: #ffebee;
-				color: #c62828;
-				padding: 4px 8px;
-				border-radius: 15px;
-				font-size: 0.85rem;
-				border: 1px solid #ffcdd2;
-			}
-
-			.available-badge {
-				background: #e8f5e8;
-				color: #2e7d32;
-				padding: 4px 8px;
-				border-radius: 15px;
-				font-size: 0.85rem;
-				border: 1px solid #c8e6c9;
-				font-weight: 600;
-			}
-
-			.empty-state {
-				text-align: center;
-				color: #6c757d;
-				font-style: italic;
-				padding: 30px;
-			}
-
-			.empty-state-small {
-				text-align: center;
-				color: #888;
-				font-style: italic;
-				padding: 10px;
-				font-size: 0.9em;
-			}
-
-			.fade-enter-active,
-			.fade-leave-active {
-				transition: opacity 0.5s ease;
-			}
-
-			.fade-enter-from,
-			.fade-leave-to {
-				opacity: 0;
-			}
-
-			.loading {
-				display: inline-block;
-				width: 20px;
-				height: 20px;
-				border: 3px solid #f3f3f3;
-				border-top: 3px solid #4facfe;
-				border-radius: 50%;
-				animation: spin 1s linear infinite;
-			}
-
-			@keyframes spin {
-				0% {
-					transform: rotate(0deg);
-				}
-				100% {
-					transform: rotate(360deg);
-				}
-			}
-
 			/* Custom Modal Styles */
 			.custom-modal-overlay {
 				position: fixed;
@@ -457,6 +319,25 @@
 				display: flex;
 				justify-content: center;
 				gap: 15px;
+			}
+
+			.loading {
+				display: inline-block;
+				width: 20px;
+				height: 20px;
+				border: 3px solid #f3f3f3;
+				border-top: 3px solid #4facfe;
+				border-radius: 50%;
+				animation: spin 1s linear infinite;
+			}
+
+			@keyframes spin {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
 			}
 		</style>
 	</head>
@@ -536,60 +417,6 @@
 							</div>
 						</div>
 					</transition>
-
-					<!-- Manager Login -->
-					<div class="manager-login">
-						<strong>כניסת מנהלים:</strong>
-						<input
-							type="password"
-							v-model="managerPasswordInput"
-							placeholder="סיסמת מנהל"
-							@keyup.enter="checkManagerAccess"
-						/>
-						<button class="btn btn-primary" @click="checkManagerAccess" :disabled="!managerPasswordInput">כניסה</button>
-						<div v-if="isManager" style="margin-top: 10px; color: #00ff88">✓ מחובר כמנהל</div>
-					</div>
-
-					<!-- Manager Panel -->
-					<transition name="fade">
-						<div v-if="isManager" class="manager-panel">
-							<h3>פאנל מנהלים</h3>
-							<div class="form-actions">
-								<button class="btn btn-primary" @click="loadAllRequests" :disabled="loading">צפייה בכל הבקשות</button>
-								<button class="btn" @click="exportAllRequests" :disabled="loading">ייצוא לגוגל שיטס</button>
-								<button class="btn btn-danger" @click="clearAllData" :disabled="loading">איפוס כל הנתונים</button>
-							</div>
-
-							<div v-if="showRequests" class="requests-list">
-								<h4>בקשות:</h4>
-								<div v-if="Object.keys(allRequests).length === 0" class="empty-state">אין בקשות עדיין</div>
-								<div v-else>
-									<div v-for="(weekRequests, weekKey) in allRequests" :key="weekKey" class="week-section">
-										<h5>שבוע: {{ formatWeekKeyForDisplay(weekKey) }}</h5>
-										<div v-if="Object.keys(weekRequests).length === 0" class="empty-state-small">אין בקשות לשבוע זה.</div>
-										<div v-else>
-											<div v-for="(requestData, employee) in weekRequests" :key="employee" class="request-item">
-												<div class="request-employee">
-													{{ employee }} {{ getManagerDisplayLimitText(requestData.shifts.length, requestData.chosenLimit) }}
-												</div>
-												<div class="request-shifts">
-													<span
-														v-if="requestData.shifts.length === 0 && requestData.chosenLimit === 3"
-														class="available-badge"
-													>
-														זמין לכל המשמרות
-													</span>
-													<span v-for="shift in requestData.shifts" :key="shift" class="request-shift">
-														{{ formatShiftForDisplay(shift) }}
-													</span>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</transition>
 				</div>
 			</div>
 
@@ -642,13 +469,6 @@
 						selectedEmployee: '',
 						selectedShifts: [], // Stores shift IDs (e.g., '0-day', '1-night')
 						currentDeadlineWeek: [], // Array of Date objects for the current relevant week
-
-						// Manager related data
-						managerPasswordInput: '',
-						managerPassword: 'Aa321321', // IMPORTANT: Change this password in a real application!
-						isManager: false,
-						showRequests: false,
-						allRequests: {}, // Stores all employee requests from localStorage
 
 						// UI state
 						loading: false, // Controls loading spinner on buttons
@@ -981,119 +801,6 @@
 						}
 					},
 
-					/* --- Manager Panel Logic --- */
-
-					// Checks the manager password for access
-					async checkManagerAccess() {
-						if (this.managerPasswordInput === this.managerPassword) {
-							this.isManager = true;
-							await this.showCustomModal('התחברת בהצלחה כמנהל!', 'alert');
-						} else if (this.managerPasswordInput) {
-							await this.showCustomModal('סיסמה שגויה', 'alert');
-							this.managerPasswordInput = ''; // Clear password input on wrong attempt
-						}
-					},
-
-					// Loads all employee requests for the current week for manager view
-					// Now loads ALL requests from localStorage, grouped by week.
-					loadAllRequests() {
-						try {
-							this.allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-							this.showRequests = true;
-						} catch (error) {
-							console.error('Error loading requests:', error);
-							this.allRequests = {}; // Reset to empty if there's an error
-							this.showRequests = true;
-						}
-					},
-
-					// Exports all requests to CSV format and copies to clipboard
-					async exportAllRequests() {
-						if (!this.isManager) return;
-
-						this.setLoading(true);
-
-						try {
-							const allRequestsData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
-							const weekRequests = allRequestsData[this.weekKey] || {};
-
-							let csvContent = 'שם,';
-
-							// Create headers for shifts (Day/Night for each day of the week)
-							this.currentDeadlineWeek.forEach((date, index) => {
-								const hebrewDay = this.shortHebrewDays[index];
-								const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
-								csvContent += `${dateStr} יום,${dateStr} לילה,`;
-							});
-							csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
-
-							// Add employee data rows
-							this.employees.forEach(employee => {
-								const requestData = weekRequests[employee];
-								const employeeShifts = requestData ? requestData.shifts : [];
-								csvContent += `${employee},`;
-
-								this.currentDeadlineWeek.forEach((date, dayIndex) => {
-									const dayId = `${dayIndex}-day`;
-									const nightId = `${dayIndex}-night`;
-
-									// Determine availability based on selected shifts and mode
-									const isUnavailableModeForExport = requestData ? requestData.chosenLimit === 3 : true; // Assume unavailable if no specific limit was chosen
-
-									let dayStatus, nightStatus;
-									if (isUnavailableModeForExport) {
-										dayStatus = employeeShifts.includes(dayId) ? 'לא זמין' : 'זמין';
-										nightStatus = employeeShifts.includes(nightId) ? 'לא זמין' : 'זמין';
-									} else {
-										// For 'desired' shifts, inverse the logic for 'unavailable' in the export
-										dayStatus = employeeShifts.includes(dayId) ? 'זמין' : 'לא זמין';
-										nightStatus = employeeShifts.includes(nightId) ? 'זמין' : 'לא זמין';
-									}
-
-									csvContent += `${dayStatus},${nightStatus},`;
-								});
-
-								csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
-							});
-
-							// Use a temporary textarea to copy to clipboard for broader compatibility
-							const tempTextArea = document.createElement('textarea');
-							tempTextArea.value = csvContent;
-							document.body.appendChild(tempTextArea);
-							tempTextArea.select();
-							document.execCommand('copy');
-							document.body.removeChild(tempTextArea);
-
-							await this.showCustomModal('הנתונים הועתקו ללוח! תוכלו כעת להדביק אותם בגוגל שיטס.', 'alert');
-						} catch (error) {
-							console.error('Export error:', error);
-							await this.showCustomModal('שגיאה בייצוא הנתונים', 'alert');
-						} finally {
-							this.setLoading(false);
-						}
-					},
-
-					// Clears all data from localStorage (DANGEROUS OPERATION)
-					async clearAllData() {
-						if (!this.isManager) return;
-
-						const confirmed = await this.showCustomModal(
-							'האם אתם בטוחים שאתם רוצים לאפס את כל הנתונים? פעולה זו בלתי הפיכה!',
-							'confirm',
-						);
-						if (confirmed) {
-							try {
-								localStorage.removeItem('employeeRequests');
-								this.allRequests = {};
-								this.showRequests = false;
-								await this.showCustomModal('כל הנתונים נמחקו בהצלחה!', 'alert');
-							} catch (error) {
-								console.error('Error clearing data:', error);
-								await this.showCustomModal('שגיאה במחיקת הנתונים', 'alert');
-							}
-						}
-					},
-
 					/* --- Date & Time Utilities --- */
 
 					// Updates the deadline information displayed to the user
@@ -1202,28 +909,6 @@
 						const shiftTypeHe = shiftType === 'day' ? 'יום' : 'לילה';
 						return `${hebrewDay} - ${shiftTypeHe}`;
 					},
-
-					// Helper to get the correct display text for manager view based on chosen limit
-					getManagerDisplayLimitText(shiftCount, chosenLimit) {
-						if (chosenLimit === 3) {
-							return `(${shiftCount}/${chosenLimit} משמרות לא זמינות)`;
-						} else {
-							return `(${shiftCount}/${chosenLimit} משמרות רצויות)`;
-						}
-					},
-
-					// Formats the week key (e.g., "2025-7-6") into a readable date range
-					formatWeekKeyForDisplay(weekKey) {
-						const [year, month, day] = weekKey.split('-').map(Number);
-						const startDate = new Date(year, month, day);
-						const endDate = new Date(startDate);
-						endDate.setDate(startDate.getDate() + 6); // Add 6 days to get to Saturday
-
-						const options = { day: 'numeric', month: 'numeric', year: 'numeric' };
-						return `${startDate.toLocaleDateString('he-IL', options)} - ${endDate.toLocaleDateString('he-IL', options)}`;
-					},
-
-					/* --- UI State Management --- */
 
 					// Sets the loading state for buttons
 					setLoading(state) {

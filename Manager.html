@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>מערכת בקשות משמרות - מנהל</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			body {
+				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Arial Hebrew', sans-serif;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				min-height: 100vh;
+				padding: 20px;
+				direction: rtl;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+
+			#app {
+				width: 100%;
+			}
+
+			.container {
+				max-width: 800px;
+				margin: 0 auto;
+				background: white;
+				border-radius: 15px;
+				box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+				overflow: hidden;
+			}
+
+			.header {
+				background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+				color: white;
+				padding: 30px;
+				text-align: center;
+			}
+
+			.header h1 {
+				font-size: 2.5rem;
+				margin-bottom: 10px;
+				font-weight: 300;
+			}
+
+			.header p {
+				font-size: 1.1rem;
+				opacity: 0.9;
+			}
+
+			.content {
+				padding: 30px;
+			}
+
+			.btn {
+				background: linear-gradient(135deg, #00b894, #00a085);
+				color: white;
+				border: none;
+				padding: 15px 30px;
+				border-radius: 10px;
+				font-size: 1.1rem;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				margin: 10px;
+			}
+
+			.btn:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 10px 20px rgba(0, 184, 148, 0.3);
+			}
+
+			.btn:disabled {
+				opacity: 0.6;
+				cursor: not-allowed;
+				transform: none;
+			}
+
+			.btn-primary {
+				background: linear-gradient(135deg, #4facfe, #00f2fe);
+			}
+
+			.btn-primary:hover {
+				box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+			}
+
+			.btn-danger {
+				background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+			}
+
+			.btn-success {
+				background: linear-gradient(135deg, #00b894, #00a085);
+			}
+
+			.manager-panel {
+				background: #f8f9fa;
+				border-radius: 12px;
+				padding: 25px;
+				margin-top: 25px;
+				animation: fadeIn 0.5s ease;
+			}
+
+			@keyframes fadeIn {
+				from {
+					opacity: 0;
+					transform: translateY(20px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+
+			.requests-list {
+				margin-top: 20px;
+			}
+
+			.week-section {
+				margin-bottom: 30px;
+				padding: 15px;
+				border-radius: 10px;
+				background-color: #e9f5ff; /* Light blue background for week sections */
+				border: 1px solid #cce7ff;
+			}
+
+			.week-section h5 {
+				font-size: 1.2rem;
+				margin-bottom: 15px;
+				color: #004085;
+				text-align: center;
+			}
+
+			.request-item {
+				background: white;
+				border-radius: 8px;
+				padding: 15px;
+				margin-bottom: 10px;
+				border-right: 4px solid #4facfe;
+				transition: all 0.3s ease;
+			}
+
+			.request-item:hover {
+				transform: translateX(-5px);
+				box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+			}
+
+			.request-employee {
+				font-weight: 600;
+				color: #2c3e50;
+				margin-bottom: 8px;
+			}
+
+			.request-shifts {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.request-shift {
+				background: #ffebee;
+				color: #c62828;
+				padding: 4px 8px;
+				border-radius: 15px;
+				font-size: 0.85rem;
+				border: 1px solid #ffcdd2;
+			}
+
+			.available-badge {
+				background: #e8f5e8;
+				color: #2e7d32;
+				padding: 4px 8px;
+				border-radius: 15px;
+				font-size: 0.85rem;
+				border: 1px solid #c8e6c9;
+				font-weight: 600;
+			}
+
+			.empty-state {
+				text-align: center;
+				color: #6c757d;
+				font-style: italic;
+				padding: 30px;
+			}
+
+			.empty-state-small {
+				text-align: center;
+				color: #888;
+				font-style: italic;
+				padding: 10px;
+				font-size: 0.9em;
+			}
+
+			.loading {
+				display: inline-block;
+				width: 20px;
+				height: 20px;
+				border: 3px solid #f3f3f3;
+				border-top: 3px solid #4facfe;
+				border-radius: 50%;
+				animation: spin 1s linear infinite;
+			}
+
+			@keyframes spin {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
+			}
+
+			/* Custom Modal Styles */
+			.custom-modal-overlay {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: rgba(0, 0, 0, 0.6);
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				z-index: 1000;
+			}
+
+			.custom-modal {
+				background: white;
+				padding: 30px;
+				border-radius: 15px;
+				box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+				text-align: center;
+				max-width: 400px;
+				width: 90%;
+			}
+
+			.custom-modal p {
+				font-size: 1.1rem;
+				margin-bottom: 20px;
+				color: #333;
+			}
+
+			.custom-modal .modal-actions {
+				display: flex;
+				justify-content: center;
+				gap: 15px;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<div class="container">
+				<div class="header">
+					<h1>פאנל מנהלים</h1>
+					<p>ניהול בקשות משמרות</p>
+				</div>
+
+				<div class="content">
+					<!-- Manager Login -->
+					<div v-if="!isManager" class="manager-login">
+						<strong>כניסת מנהלים:</strong>
+						<input
+							type="password"
+							v-model="managerPasswordInput"
+							placeholder="סיסמת מנהל"
+							@keyup.enter="checkManagerAccess"
+						/>
+						<button class="btn btn-primary" @click="checkManagerAccess" :disabled="!managerPasswordInput">כניסה</button>
+					</div>
+
+					<!-- Manager Panel -->
+					<div v-if="isManager" class="manager-panel">
+						<h3>פאנל מנהלים</h3>
+						<div class="form-actions">
+							<button class="btn btn-primary" @click="loadAllRequests" :disabled="loading">צפייה בכל הבקשות</button>
+							<button class="btn" @click="exportAllRequests" :disabled="loading">ייצוא לגוגל שיטס</button>
+							<button class="btn btn-danger" @click="clearAllData" :disabled="loading">איפוס כל הנתונים</button>
+						</div>
+
+						<div v-if="showRequests" class="requests-list">
+							<h4>בקשות:</h4>
+							<div v-if="Object.keys(allRequests).length === 0" class="empty-state">אין בקשות עדיין</div>
+							<div v-else>
+								<div v-for="(weekRequests, weekKey) in allRequests" :key="weekKey" class="week-section">
+									<h5>שבוע: {{ formatWeekKeyForDisplay(weekKey) }}</h5>
+									<div v-if="Object.keys(weekRequests).length === 0" class="empty-state-small">אין בקשות לשבוע זה.</div>
+									<div v-else>
+										<div v-for="(requestData, employee) in weekRequests" :key="employee" class="request-item">
+											<div class="request-employee">
+												{{ employee }} {{ getManagerDisplayLimitText(requestData.shifts.length, requestData.chosenLimit) }}
+											</div>
+											<div class="request-shifts">
+												<span
+													v-if="requestData.shifts.length === 0 && requestData.chosenLimit === 3"
+													class="available-badge"
+												>
+													זמין לכל המשמרות
+												</span>
+												<span v-for="shift in requestData.shifts" :key="shift" class="request-shift">
+													{{ formatShiftForDisplay(shift) }}
+												</span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Custom Modal Component -->
+			<div v-if="showModal" class="custom-modal-overlay">
+				<div class="custom-modal">
+					<p>{{ modalMessage }}</p>
+					<div class="modal-actions">
+						<button v-if="modalType === 'confirm'" @click="modalResolve(true)" class="btn btn-success">כן</button>
+						<button v-if="modalType === 'confirm'" @click="modalResolve(false)" class="btn btn-danger">לא</button>
+						<button v-if="modalType === 'alert'" @click="modalResolve(true)" class="btn btn-primary">אישור</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			const { createApp } = Vue;
+
+			createApp({
+				data() {
+					return {
+						// Manager related data
+						managerPasswordInput: '',
+						managerPassword: 'Aa321321', // IMPORTANT: Change this password in a real application!
+						isManager: false,
+						showRequests: false,
+						allRequests: {}, // Stores all employee requests from localStorage
+
+						// UI state
+						loading: false, // Controls loading spinner on buttons
+
+						// Hebrew days for display (needed for formatting shifts)
+						shortHebrewDays: ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"],
+
+						// Custom Modal state
+						showModal: false,
+						modalMessage: '',
+						modalType: 'alert', // 'alert' or 'confirm'
+						modalResolve: null, // Function to resolve the modal promise
+					};
+				},
+
+				mounted() {
+					// Attempt to load requests immediately if manager is already logged in (e.g., after refresh)
+					// This assumes 'isManager' could be persisted or set via other means not shown here.
+					// For this standalone page, manager access is purely via password.
+				},
+
+				methods: {
+					/* --- Manager Panel Logic --- */
+
+					// Checks the manager password for access
+					async checkManagerAccess() {
+						if (this.managerPasswordInput === this.managerPassword) {
+							this.isManager = true;
+							this.managerPasswordInput = ''; // Clear password after successful login
+							await this.showCustomModal('התחברת בהצלחה כמנהל!', 'alert');
+							this.loadAllRequests(); // Load requests immediately upon successful login
+						} else if (this.managerPasswordInput) {
+							await this.showCustomModal('סיסמה שגויה', 'alert');
+							this.managerPasswordInput = ''; // Clear password input on wrong attempt
+						}
+					},
+
+					// Loads all employee requests from localStorage, grouped by week.
+					loadAllRequests() {
+						try {
+							this.allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+							this.showRequests = true;
+						} catch (error) {
+							console.error('Error loading requests:', error);
+							this.allRequests = {}; // Reset to empty if there's an error
+							this.showRequests = true;
+						}
+					},
+
+					// Exports all requests to CSV format and copies to clipboard
+					async exportAllRequests() {
+						if (!this.isManager) return;
+
+						this.setLoading(true);
+
+						try {
+							const allRequestsData = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
+							let csvContent = 'שבוע,שם,';
+
+							// Dynamically create headers for shifts based on a full week structure
+							// This assumes a standard 7-day week for export purposes
+							const tempDate = new Date();
+							tempDate.setDate(tempDate.getDate() - tempDate.getDay()); // Start from Sunday of current week
+							const weekDays = [];
+							for (let i = 0; i < 7; i++) {
+								const date = new Date(tempDate);
+								date.setDate(tempDate.getDate() + i);
+								const hebrewDay = this.shortHebrewDays[i];
+								const dateStr = `${hebrewDay} ${date.getDate()}/${date.getMonth() + 1}`;
+								weekDays.push({
+									id_day: `${i}-day`,
+									id_night: `${i}-night`,
+									header_day: `${dateStr} יום`,
+									header_night: `${dateStr} לילה`,
+								});
+							}
+
+							weekDays.forEach(day => {
+								csvContent += `${day.header_day},${day.header_night},`;
+							});
+							csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
+
+							// Iterate through each week and then each employee's request
+							for (const weekKey in allRequestsData) {
+								const weekRequests = allRequestsData[weekKey];
+								const formattedWeek = this.formatWeekKeyForDisplay(weekKey);
+
+								for (const employee in weekRequests) {
+									const requestData = weekRequests[employee];
+									const employeeShifts = requestData.shifts || [];
+									csvContent += `${formattedWeek},${employee},`;
+
+									weekDays.forEach(day => {
+										const isUnavailableModeForExport = requestData.chosenLimit === 3;
+
+										let dayStatus, nightStatus;
+										if (isUnavailableModeForExport) {
+											dayStatus = employeeShifts.includes(day.id_day) ? 'לא זמין' : 'זמין';
+											nightStatus = employeeShifts.includes(day.id_night) ? 'לא זמין' : 'זמין';
+										} else {
+											// For 'desired' shifts, inverse the logic for 'unavailable' in the export
+											dayStatus = employeeShifts.includes(day.id_day) ? 'זמין' : 'לא זמין';
+											nightStatus = employeeShifts.includes(day.id_night) ? 'זמין' : 'לא זמין';
+										}
+										csvContent += `${dayStatus},${nightStatus},`;
+									});
+									csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
+								}
+							}
+
+							// Use a temporary textarea to copy to clipboard for broader compatibility
+							const tempTextArea = document.createElement('textarea');
+							tempTextArea.value = csvContent;
+							document.body.appendChild(tempTextArea);
+							tempTextArea.select();
+							document.execCommand('copy');
+							document.body.removeChild(tempTextArea);
+
+							await this.showCustomModal('הנתונים הועתקו ללוח! תוכלו כעת להדביק אותם בגוגל שיטס.', 'alert');
+						} catch (error) {
+							console.error('Export error:', error);
+							await this.showCustomModal('שגיאה בייצוא הנתונים', 'alert');
+						} finally {
+							this.setLoading(false);
+						}
+					},
+
+					// Clears all data from localStorage (DANGEROUS OPERATION)
+					async clearAllData() {
+						if (!this.isManager) return;
+
+						const confirmed = await this.showCustomModal(
+							'האם אתם בטוחים שאתם רוצים לאפס את כל הנתונים? פעולה זו בלתי הפיכה!',
+							'confirm',
+						);
+						if (confirmed) {
+							try {
+								localStorage.removeItem('employeeRequests');
+								this.allRequests = {};
+								this.showRequests = false;
+								await this.showCustomModal('כל הנתונים נמחקו בהצלחה!', 'alert');
+							} catch (error) {
+								console.error('Error clearing data:', error);
+								await this.showCustomModal('שגיאה במחיקת הנתונים', 'alert');
+							}
+						}
+					},
+
+					/* --- Helper Functions (for display and data handling) --- */
+
+					// Formats a shift ID for display (e.g., "א' - יום")
+					formatShiftForDisplay(shiftId) {
+						const [dayIndex, shiftType] = shiftId.split('-');
+						const hebrewDay = this.shortHebrewDays[parseInt(dayIndex)];
+						const shiftTypeHe = shiftType === 'day' ? 'יום' : 'לילה';
+						return `${hebrewDay} - ${shiftTypeHe}`;
+					},
+
+					// Helper to get the correct display text for manager view based on chosen limit
+					getManagerDisplayLimitText(shiftCount, chosenLimit) {
+						if (chosenLimit === 3) {
+							return `(${shiftCount}/${chosenLimit} משמרות לא זמינות)`;
+						} else {
+							return `(${shiftCount}/${chosenLimit} משמרות רצויות)`;
+						}
+					},
+
+					// Formats the week key (e.g., "2025-7-6") into a readable date range
+					formatWeekKeyForDisplay(weekKey) {
+						const [year, month, day] = weekKey.split('-').map(Number);
+						const startDate = new Date(year, month, day);
+						const endDate = new Date(startDate);
+						endDate.setDate(startDate.getDate() + 6); // Add 6 days to get to Saturday
+
+						const options = { day: 'numeric', month: 'numeric', year: 'numeric' };
+						return `${startDate.toLocaleDateString('he-IL', options)} - ${endDate.toLocaleDateString('he-IL', options)}`;
+					},
+
+					/* --- UI State Management --- */
+
+					// Sets the loading state for buttons
+					setLoading(state) {
+						this.loading = state;
+					},
+
+					/* --- Custom Modal Functions --- */
+
+					// Displays a custom modal (alert or confirm)
+					async showCustomModal(message, type = 'alert') {
+						this.modalMessage = message;
+						this.modalType = type;
+						this.showModal = true;
+						return new Promise(resolve => {
+							this.modalResolve = result => {
+								this.showModal = false;
+								resolve(result);
+							};
+						});
+					},
+				},
+			}).mount('#app');
+		</script>
+	</body>
+</html>
