@@ -184,7 +184,7 @@
 			}
 
 			.form-title::before {
-				content: '�';
+				content: '👤';
 				font-size: 1.2rem;
 			}
 
@@ -873,6 +873,13 @@
 									: `הבקשה נשלחה בהצלחה! בחרתם ${this.selectedShifts.length} משמרות.`;
 
 							await this.showCustomModal(message, 'alert');
+
+							// Reset form to default options after successful submission
+							this.selectedEmployee = '';
+							this.selectedShifts = [];
+							this.selectedNoOfShiftsValue = 3; // Reset to default 'צו פתוח'
+							this.updateInstructionsText(); // Update instructions to default
+							this.updateCounter(); // Update counter to reflect empty selection
 						} finally {
 							this.setLoading(false); // Hide loading spinner
 						}
@@ -922,9 +929,9 @@
 								// Check consecutive nights if both are nights
 								if (shift1.shiftType === 'night' && shift2.shiftType === 'night') {
 									const isConsecutive =
-										Math.abs(shift1.dayNum - shift2.dayNum) === 1 ||
-										(shift1.dayNum === 6 && shift2.dayNum === 0) || // Sat-Sun
-										(shift1.dayNum === 0 && shift2.dayNum === 6); // Sun-Sat
+										Math.abs(newDayNum - existingDayNum) === 1 ||
+										(newDayNum === 6 && existingDayNum === 0) || // Sat (6) -> Sun (0)
+										(newDayNum === 0 && existingDayNum === 6); // Sun (0) -> Sat (6) (for cases where existing is Sat)
 
 									if (!isConsecutive) {
 										return { valid: false, message: 'משמרות לילה חייבות להיות רצופות.' };
