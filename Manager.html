@@ -308,7 +308,7 @@
 				urlPasswordParam: 'pwd',
 
 				// Your secret passwords (change these!)
-				validPasswords: ['Aa321321', 'Admin123'],
+				validPasswords: ['Manager2024!', 'SecureAdmin123', 'ShiftManager2024'],
 
 				// Optional: Time restrictions
 				restrictByTime: false,
@@ -450,15 +450,20 @@
 					// Clear existing options
 					weekSelect.innerHTML = '<option value="">-- בחר שבוע --</option>';
 
+					// Debug: Show what's in localStorage
+					console.log('All requests data:', allRequests);
+					console.log('Available weeks:', Object.keys(allRequests));
+
 					// Add options for each week that has data
 					Object.keys(allRequests).forEach(weekKey => {
 						const option = document.createElement('option');
 						option.value = weekKey;
 						option.textContent = formatWeekKey(weekKey);
 						weekSelect.appendChild(option);
-					});
 
-					console.log('Available weeks:', Object.keys(allRequests));
+						// Debug: Show data for each week
+						console.log(`Week ${weekKey} data:`, allRequests[weekKey]);
+					});
 				} catch (error) {
 					console.error('Error loading weeks:', error);
 				}
@@ -514,16 +519,37 @@
 					const allRequests = JSON.parse(localStorage.getItem('employeeRequests') || '{}');
 					const weekRequests = allRequests[weekKey] || {};
 
+					// Debug: Show what we're trying to load
+					console.log(`Loading requests for week: ${weekKey}`);
+					console.log('Week requests data:', weekRequests);
+					console.log('Employee names in data:', Object.keys(weekRequests));
+
 					// If we don't have dates for this week, generate them
 					if (!currentWeekDates.length && weekKey !== 'current') {
 						currentWeekDates = generateWeekDates(weekKey);
 					}
 
+					// Show raw data in a debug section
+					let debugInfo = `
+                    <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-family: monospace; font-size: 0.9rem;">
+                        <h5>🔍 Debug Info:</h5>
+                        <p><strong>Week Key:</strong> ${weekKey}</p>
+                        <p><strong>Total weeks in storage:</strong> ${Object.keys(allRequests).length}</p>
+                        <p><strong>Employees in this week:</strong> ${Object.keys(weekRequests).length}</p>
+                        <p><strong>Employee names found:</strong> ${Object.keys(weekRequests).join(', ') || 'None'}</p>
+                        <p><strong>Expected employees:</strong> ${EMPLOYEES.join(', ')}</p>
+                    </div>
+                `;
+
+					document.getElementById('requestsList').innerHTML = debugInfo;
+
 					displayRequests(weekRequests, weekKey);
 					currentWeekKey = weekKey;
 				} catch (error) {
 					console.error('Error loading requests:', error);
-					document.getElementById('requestsList').innerHTML = '<div class="empty-state">שגיאה בטעינת הנתונים</div>';
+					document.getElementById(
+						'requestsList',
+					).innerHTML = `<div class="empty-state">שגיאה בטעינת הנתונים: ${error.message}</div>`;
 				}
 			}
 
